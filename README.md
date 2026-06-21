@@ -22,10 +22,10 @@ Upload thesis report + upload defense slides + add revision notes
 Current implementation status:
 
 ```text
-Phase 1: Static frontend UI with mock data
+Phase 2: Backend foundation implemented
 ```
 
-Backend APIs, authentication, document parsing, Cloudflare R2 storage, queue workers, and Gemini analysis are planned for later phases.
+The repository now contains a static frontend UI and a FastAPI backend foundation. Document parsing, Cloudflare R2 storage, queue workers, Gemini analysis, and real report generation are planned for later phases.
 
 ## Features
 
@@ -44,10 +44,21 @@ Implemented in the current static UI:
 - Presentation script panel
 - Export report page with Markdown as the MVP priority
 
+Implemented in the current backend foundation:
+
+- FastAPI application structure
+- `/api/health`
+- User registration and login
+- JWT bearer authentication
+- `GET /api/auth/me`
+- Authenticated project CRUD
+- SQLAlchemy models for users, projects, documents, and analyses
+- Alembic migration setup
+- Docker Compose services for API, PostgreSQL, and Redis
+- Backend smoke tests
+
 Planned for the full MVP:
 
-- Email and password authentication
-- Project CRUD
 - Presigned document upload flow
 - Text extraction for PDF, DOCX, PPTX, and TXT
 - Redis-backed analysis queue
@@ -89,16 +100,19 @@ Current frontend:
 - Inter font
 - Static mock data
 
-Planned backend:
+Current backend:
 
 - FastAPI
-- Python 3.12+
+- Python 3.12 target runtime
 - PostgreSQL
 - Redis
 - SQLAlchemy and Alembic
+- Docker Compose for VPS deployment
+
+Planned integrations:
+
 - Cloudflare R2 for object storage
 - Google Gemini API for AI analysis
-- Docker Compose for VPS deployment
 
 ## Repository Structure
 
@@ -114,15 +128,21 @@ sidangready/
       types/
       package.json
     api/
+      app/
+      alembic/
+      tests/
+      Dockerfile
+      requirements.txt
       README.md
   .env.example
   .gitignore
+  docker-compose.yml
   package.json
   package-lock.json
   README.md
 ```
 
-`apps/api` is currently a placeholder. Backend implementation starts in a later phase.
+`apps/api` contains the Phase 2 backend foundation. Storage, parsing, worker, and AI orchestration are not implemented yet.
 
 ## Getting Started
 
@@ -168,6 +188,9 @@ Important future variables are documented in `.env.example`, including:
 - `DATABASE_URL`
 - `REDIS_URL`
 - `JWT_SECRET`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
 - `R2_*`
 - `GEMINI_API_KEY`
 
@@ -196,6 +219,21 @@ npm run build
 Builds the frontend for production.
 
 You can also run the same commands inside `apps/web`.
+
+Backend checks:
+
+```bash
+cd apps/api
+python -m compileall app
+python -m unittest discover -s tests
+alembic upgrade head --sql
+```
+
+Docker Compose config:
+
+```bash
+docker compose config
+```
 
 ## Local Development
 
@@ -238,11 +276,23 @@ npm run lint
 npm run build
 ```
 
+For the backend:
+
+```bash
+cd apps/api
+python -m compileall app
+python -m unittest discover -s tests
+alembic upgrade head --sql
+```
+
 Current expected result:
 
 ```text
 lint: pass
 build: pass
+backend compile: pass
+backend tests: pass
+alembic offline SQL: pass
 ```
 
 ## Deployment Target
@@ -268,10 +318,10 @@ The backend, worker, database, storage, and AI integration are not implemented i
 
 ## Roadmap
 
-Phase 0: Repository foundation  
-Phase 1: Static frontend UI with mock data  
-Phase 2: Backend foundation with FastAPI, database, auth, and project CRUD  
-Phase 3: Cloudflare R2 storage integration  
+Phase 0: Repository foundation - complete  
+Phase 1: Static frontend UI with mock data - complete  
+Phase 2: Backend foundation with FastAPI, database, auth, and project CRUD - complete  
+Phase 3: Cloudflare R2 storage integration - next  
 Phase 4: Document parsing for PDF, DOCX, PPTX, and TXT  
 Phase 5: Queue and worker for asynchronous analysis  
 Phase 6: Gemini-powered structured analysis  
@@ -298,4 +348,4 @@ No license has been selected yet. All rights are reserved unless a license is ad
 
 ## Status
 
-SidangReady AI is currently in early MVP development. The repository contains a production-oriented frontend foundation, but the application is not ready for real document analysis until the backend, storage, queue, and AI pipeline are implemented.
+SidangReady AI is currently in early MVP development. The repository contains a production-oriented frontend foundation and backend API foundation, but the application is not ready for real document analysis until storage, parsing, queue, export, and AI pipeline phases are implemented.
