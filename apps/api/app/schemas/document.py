@@ -18,6 +18,31 @@ class DocumentCreate(BaseModel):
     r2_object_key: str | None = Field(default=None, max_length=600)
 
 
+class DocumentPresignRequest(BaseModel):
+    document_type: DocumentType
+    file_name: str = Field(min_length=1, max_length=255)
+    file_mime_type: str = Field(min_length=1, max_length=120)
+    file_size: int = Field(gt=0)
+
+
+class DocumentPresignResponse(BaseModel):
+    document_id: UUID
+    object_key: str
+    upload_url: str
+    method: str = "PUT"
+    expires_in: int
+    headers: dict[str, str]
+
+
+class DocumentConfirmRequest(BaseModel):
+    document_id: UUID
+    document_type: DocumentType
+    file_name: str = Field(min_length=1, max_length=255)
+    file_mime_type: str = Field(min_length=1, max_length=120)
+    file_size: int = Field(gt=0)
+    r2_object_key: str = Field(min_length=1, max_length=600)
+
+
 class DocumentResponse(DocumentCreate):
     model_config = ConfigDict(from_attributes=True)
 

@@ -4,3 +4,4 @@ SQLAlchemy==2.0.50
 alembic==1.18.4
 psycopg[binary]==3.2.3
 httpx==0.28.1
+boto3==1.35.90

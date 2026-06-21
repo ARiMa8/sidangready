@@ -40,6 +40,18 @@ def get_project_for_user(db: Session, project_id: UUID, user_id: UUID) -> Projec
     return project
 
 
+def get_project_for_user_or_none(
+    db: Session,
+    project_id: UUID,
+    user_id: UUID,
+) -> Project | None:
+    statement = select(Project).where(
+        Project.id == project_id,
+        Project.user_id == user_id,
+    )
+    return db.execute(statement).scalar_one_or_none()
+
+
 def create_project(db: Session, user_id: UUID, payload: ProjectCreate) -> Project:
     project = Project(user_id=user_id, **payload.model_dump())
     db.add(project)

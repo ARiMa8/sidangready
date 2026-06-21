@@ -22,10 +22,10 @@ Upload thesis report + upload defense slides + add revision notes
 Current implementation status:
 
 ```text
-Phase 2: Backend foundation implemented
+Phase 3: R2 storage integration complete
 ```
 
-The repository now contains a static frontend UI and a FastAPI backend foundation. Document parsing, Cloudflare R2 storage, queue workers, Gemini analysis, and real report generation are planned for later phases.
+The repository now contains a static frontend UI, FastAPI backend foundation, and Cloudflare R2 document upload API contracts. Document parsing, queue workers, Gemini analysis, and real report generation are planned for later phases.
 
 ## Features
 
@@ -56,10 +56,15 @@ Implemented in the current backend foundation:
 - Alembic migration setup
 - Docker Compose services for API, PostgreSQL, and Redis
 - Backend smoke tests
+- Cloudflare R2 configuration
+- Presigned document upload endpoint
+- Upload confirmation endpoint
+- Project-owned document list endpoint
+- Document delete endpoint with R2 object deletion attempt
+- File type, MIME type, file size, and total project upload validation
 
 Planned for the full MVP:
 
-- Presigned document upload flow
 - Text extraction for PDF, DOCX, PPTX, and TXT
 - Redis-backed analysis queue
 - Google Gemini structured analysis
@@ -107,11 +112,11 @@ Current backend:
 - PostgreSQL
 - Redis
 - SQLAlchemy and Alembic
+- Cloudflare R2 via S3-compatible API
 - Docker Compose for VPS deployment
 
 Planned integrations:
 
-- Cloudflare R2 for object storage
 - Google Gemini API for AI analysis
 
 ## Repository Structure
@@ -223,10 +228,9 @@ You can also run the same commands inside `apps/web`.
 Backend checks:
 
 ```bash
-cd apps/api
-python -m compileall app
-python -m unittest discover -s tests
-alembic upgrade head --sql
+npm run api:compile
+npm run api:test
+npm run api:migration:sql
 ```
 
 Docker Compose config:
@@ -279,10 +283,15 @@ npm run build
 For the backend:
 
 ```bash
-cd apps/api
-python -m compileall app
-python -m unittest discover -s tests
-alembic upgrade head --sql
+npm run api:compile
+npm run api:test
+npm run api:migration:sql
+```
+
+Run all frontend and backend checks from the repository root:
+
+```bash
+npm run check
 ```
 
 Current expected result:
@@ -294,6 +303,29 @@ backend compile: pass
 backend tests: pass
 alembic offline SQL: pass
 ```
+
+## Document Upload API Flow
+
+Phase 3 adds the backend API contract for direct-to-R2 uploads:
+
+```text
+POST /api/projects/{project_id}/documents/presign
+-> frontend uploads file directly to R2 with returned PUT URL
+POST /api/projects/{project_id}/documents/confirm
+-> backend stores document metadata
+GET /api/projects/{project_id}/documents
+DELETE /api/projects/{project_id}/documents/{document_id}
+```
+
+The backend enforces:
+
+- Allowed file extensions
+- Allowed MIME types
+- Per-document upload limits
+- Total project upload limit
+- Authenticated project ownership
+
+Real R2 credentials must only be stored in local `.env` files or deployment secrets.
 
 ## Deployment Target
 
@@ -321,8 +353,8 @@ The backend, worker, database, storage, and AI integration are not implemented i
 Phase 0: Repository foundation - complete  
 Phase 1: Static frontend UI with mock data - complete  
 Phase 2: Backend foundation with FastAPI, database, auth, and project CRUD - complete  
-Phase 3: Cloudflare R2 storage integration - next  
-Phase 4: Document parsing for PDF, DOCX, PPTX, and TXT  
+Phase 3: Cloudflare R2 storage integration - complete  
+Phase 4: Document parsing for PDF, DOCX, PPTX, and TXT - next  
 Phase 5: Queue and worker for asynchronous analysis  
 Phase 6: Gemini-powered structured analysis  
 Phase 7: Frontend API integration  
@@ -348,4 +380,4 @@ No license has been selected yet. All rights are reserved unless a license is ad
 
 ## Status
 
-SidangReady AI is currently in early MVP development. The repository contains a production-oriented frontend foundation and backend API foundation, but the application is not ready for real document analysis until storage, parsing, queue, export, and AI pipeline phases are implemented.
+SidangReady AI is currently in early MVP development. The repository contains a production-oriented frontend foundation, backend API foundation, and R2 upload API foundation, but the application is not ready for real document analysis until parsing, queue, export, and AI pipeline phases are implemented.
