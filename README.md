@@ -22,10 +22,10 @@ Upload thesis report + upload defense slides + add revision notes
 Current implementation status:
 
 ```text
-Phase 3: R2 storage integration complete
+Phase 6: Gemini analysis pipeline complete
 ```
 
-The repository now contains a static frontend UI, FastAPI backend foundation, and Cloudflare R2 document upload API contracts. Document parsing, queue workers, Gemini analysis, and real report generation are planned for later phases.
+The repository now contains a static frontend UI, FastAPI backend, Cloudflare R2 document upload flow, document parsing, Redis-backed worker queue, and Gemini-powered structured analysis. Frontend API integration and real report export are planned for later phases.
 
 ## Features
 
@@ -62,13 +62,16 @@ Implemented in the current backend foundation:
 - Project-owned document list endpoint
 - Document delete endpoint with R2 object deletion attempt
 - File type, MIME type, file size, and total project upload validation
+- Document parsing for PDF, DOCX, PPTX, and TXT
+- Redis-backed RQ analysis queue
+- Worker service for asynchronous analysis
+- Gemini structured analysis pipeline
+- Deterministic readiness score calculation
+- AI result persistence in `analyses.result_json`
 
 Planned for the full MVP:
 
-- Text extraction for PDF, DOCX, PPTX, and TXT
-- Redis-backed analysis queue
-- Google Gemini structured analysis
-- Deterministic readiness score calculation
+- Frontend integration with real backend data
 - Markdown report export
 - File retention and beta quota controls
 
@@ -113,11 +116,14 @@ Current backend:
 - Redis
 - SQLAlchemy and Alembic
 - Cloudflare R2 via S3-compatible API
+- Google Gemini API
+- RQ worker queue
 - Docker Compose for VPS deployment
 
 Planned integrations:
 
-- Google Gemini API for AI analysis
+- Frontend API integration
+- Markdown export generation
 
 ## Repository Structure
 
@@ -147,7 +153,7 @@ sidangready/
   README.md
 ```
 
-`apps/api` contains the Phase 2 backend foundation. Storage, parsing, worker, and AI orchestration are not implemented yet.
+`apps/api` contains the FastAPI backend, storage integration, document parsing, queue worker, and Gemini analysis orchestration. `apps/web` is still static/mock-data UI until Phase 7 frontend API integration.
 
 ## Getting Started
 
@@ -185,9 +191,7 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-For the current static frontend phase, no real API keys are required.
-
-Important future variables are documented in `.env.example`, including:
+Important variables are documented in `.env.example`, including:
 
 - `NEXT_PUBLIC_API_BASE_URL`
 - `DATABASE_URL`
@@ -237,6 +241,12 @@ Docker Compose config:
 
 ```bash
 docker compose config
+```
+
+Run the backend stack locally:
+
+```bash
+docker compose up --build
 ```
 
 ## Local Development
@@ -314,6 +324,7 @@ POST /api/projects/{project_id}/documents/presign
 POST /api/projects/{project_id}/documents/confirm
 -> backend stores document metadata
 GET /api/projects/{project_id}/documents
+POST /api/projects/{project_id}/documents/{document_id}/extract
 DELETE /api/projects/{project_id}/documents/{document_id}
 ```
 
@@ -326,6 +337,21 @@ The backend enforces:
 - Authenticated project ownership
 
 Real R2 credentials must only be stored in local `.env` files or deployment secrets.
+
+## Analysis API Flow
+
+Phase 6 adds the Gemini-backed worker analysis flow:
+
+```text
+POST /api/projects/{project_id}/analyses/full
+GET /api/projects/{project_id}/analyses/latest
+GET /api/projects/{project_id}/analyses/{analysis_id}
+POST /api/projects/{project_id}/analyses/{analysis_id}/retry
+```
+
+The worker uses extracted document text, validates Gemini JSON with Pydantic
+schemas, calculates readiness score deterministically in backend code, and
+stores the structured result in `analyses.result_json`.
 
 ## Deployment Target
 
@@ -346,7 +372,7 @@ The frontend should use:
 NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
 ```
 
-The backend, worker, database, storage, and AI integration are not implemented in the current phase.
+The backend, worker, database, storage, and AI analysis pipeline are implemented locally. Frontend API integration and production reverse proxy configuration are still planned.
 
 ## Roadmap
 
@@ -354,10 +380,10 @@ Phase 0: Repository foundation - complete
 Phase 1: Static frontend UI with mock data - complete  
 Phase 2: Backend foundation with FastAPI, database, auth, and project CRUD - complete  
 Phase 3: Cloudflare R2 storage integration - complete  
-Phase 4: Document parsing for PDF, DOCX, PPTX, and TXT - next  
-Phase 5: Queue and worker for asynchronous analysis  
-Phase 6: Gemini-powered structured analysis  
-Phase 7: Frontend API integration  
+Phase 4: Document parsing for PDF, DOCX, PPTX, and TXT - complete  
+Phase 5: Queue and worker for asynchronous analysis - complete  
+Phase 6: Gemini-powered structured analysis - complete  
+Phase 7: Frontend API integration - next  
 Phase 8: Markdown report export  
 Phase 9: Beta safety, quotas, cleanup jobs, and deployment documentation
 
@@ -380,4 +406,4 @@ No license has been selected yet. All rights are reserved unless a license is ad
 
 ## Status
 
-SidangReady AI is currently in early MVP development. The repository contains a production-oriented frontend foundation, backend API foundation, and R2 upload API foundation, but the application is not ready for real document analysis until parsing, queue, export, and AI pipeline phases are implemented.
+SidangReady AI is currently in MVP development. The backend can accept projects, upload metadata, parse supported documents, queue analysis jobs, and run Gemini-backed structured analysis. The frontend is still using mock data until Phase 7 connects it to the backend.

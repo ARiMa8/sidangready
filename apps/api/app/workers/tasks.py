@@ -9,15 +9,11 @@ from app.database import get_session_factory
 from app.models.analysis import Analysis
 from app.models.document import Document
 from app.models.project import Project
+from app.services.analysis_orchestrator import run_full_readiness_analysis
 
 
 def run_full_analysis_task(analysis_id: str) -> dict[str, object]:
-    """Run the Phase 5 placeholder analysis task.
-
-    Phase 5 only proves the async queue path. Real Gemini analysis starts in
-    Phase 6, so this task records document readiness metadata without creating
-    academic claims, answers, or fake evidence.
-    """
+    """Run the full SidangReady AI analysis pipeline."""
 
     parsed_analysis_id = UUID(analysis_id)
     session_factory = get_session_factory()
@@ -35,44 +31,17 @@ def run_full_analysis_task(analysis_id: str) -> dict[str, object]:
             if not documents:
                 raise ValueError("Belum ada dokumen yang dikonfirmasi untuk proyek ini.")
 
-            _set_progress(db, analysis, "running", 35, "Membaca status ekstraksi dokumen.")
-            document_summary = _summarize_documents(documents)
-
-            _set_progress(db, analysis, "running", 60, "Menyiapkan konteks analisis.")
-            extracted_documents = [
-                item for item in document_summary if item["extraction_status"] == "success"
-            ]
-
-            _set_progress(
+            result = run_full_readiness_analysis(
                 db,
-                analysis,
-                "running",
-                85,
-                "Menunggu integrasi Gemini pada Phase 6.",
+                analysis=analysis,
+                project=project,
+                documents=documents,
             )
-            result = {
-                "phase": "phase_5_queue_placeholder",
-                "message": (
-                    "Queue dan worker berhasil menjalankan placeholder analisis. "
-                    "Analisis AI Gemini belum diaktifkan pada Phase 5."
-                ),
-                "document_count": len(document_summary),
-                "extracted_document_count": len(extracted_documents),
-                "documents": document_summary,
-                "disclaimer": (
-                    "Hasil ini hanya status teknis antrean dan parsing dokumen, "
-                    "bukan analisis kesiapan sidang."
-                ),
+            return {
+                "status": "success",
+                "analysis_id": analysis_id,
+                "readiness_score": result.overview.readiness_score,
             }
-
-            analysis.status = "success"
-            analysis.progress = 100
-            analysis.current_step = "Placeholder analisis selesai."
-            analysis.result_json = result
-            analysis.error_message = None
-            project.status = "analysis_complete"
-            db.commit()
-            return {"status": "success", "analysis_id": analysis_id}
         except Exception as exc:
             _mark_failed(db, analysis, str(exc))
             return {"status": "failed", "analysis_id": analysis_id}
@@ -92,24 +61,6 @@ def _list_project_documents(db: Session, project_id: UUID) -> list[Document]:
         .order_by(Document.created_at.asc())
     )
     return list(db.execute(statement).scalars().all())
-
-
-def _summarize_documents(documents: list[Document]) -> list[dict[str, object]]:
-    summary = []
-    for document in documents:
-        summary.append(
-            {
-                "document_id": str(document.id),
-                "document_type": document.document_type,
-                "file_name": document.file_name,
-                "extraction_status": document.extraction_status,
-                "extracted_text_length": len(document.extracted_text or ""),
-                "page_count": document.page_count,
-                "slide_count": document.slide_count,
-                "warning": document.extraction_warning,
-            }
-        )
-    return summary
 
 
 def _set_progress(

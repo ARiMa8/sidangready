@@ -51,6 +51,13 @@ class Settings:
     r2_bucket_name: str
     r2_endpoint_url: str
     r2_public_base_url: str
+    gemini_api_key: str
+    gemini_cheap_model: str
+    gemini_analysis_model: str
+    gemini_timeout_seconds: int
+    gemini_max_thesis_chars: int
+    gemini_max_slide_chars: int
+    gemini_max_revision_chars: int
     max_thesis_file_mb: int
     max_slide_file_mb: int
     max_revision_file_mb: int
@@ -83,6 +90,13 @@ def get_settings() -> Settings:
         r2_bucket_name=_get_env("R2_BUCKET_NAME", ""),
         r2_endpoint_url=_get_env("R2_ENDPOINT_URL", ""),
         r2_public_base_url=_get_env("R2_PUBLIC_BASE_URL", ""),
+        gemini_api_key=_get_env("GEMINI_API_KEY", ""),
+        gemini_cheap_model=_get_env("GEMINI_CHEAP_MODEL", "gemini-2.5-flash-lite"),
+        gemini_analysis_model=_get_env("GEMINI_ANALYSIS_MODEL", "gemini-2.5-flash"),
+        gemini_timeout_seconds=_parse_int_env("GEMINI_TIMEOUT_SECONDS", 120),
+        gemini_max_thesis_chars=_parse_int_env("GEMINI_MAX_THESIS_CHARS", 18000),
+        gemini_max_slide_chars=_parse_int_env("GEMINI_MAX_SLIDE_CHARS", 12000),
+        gemini_max_revision_chars=_parse_int_env("GEMINI_MAX_REVISION_CHARS", 6000),
         max_thesis_file_mb=_parse_int_env("MAX_THESIS_FILE_MB", 30),
         max_slide_file_mb=_parse_int_env("MAX_SLIDE_FILE_MB", 30),
         max_revision_file_mb=_parse_int_env("MAX_REVISION_FILE_MB", 10),

@@ -2,7 +2,7 @@
 
 FastAPI backend for SidangReady AI.
 
-Current scope: Phase 5 complete.
+Current scope: Phase 6 complete.
 
 Implemented:
 
@@ -19,10 +19,15 @@ Implemented:
 - Document parsing for PDF, DOCX, PPTX, and TXT
 - Document extraction endpoint
 - Redis-backed RQ analysis queue
-- Full analysis placeholder task
+- Full Gemini-backed analysis task
 - Progress polling endpoints
 - Retry-once behavior for failed analyses
 - Worker service entrypoint
+- Gemini REST integration
+- Prompt templates for extraction and analysis
+- Pydantic validation for structured AI output
+- Deterministic readiness score calculation
+- AI result persistence in `analyses.result_json`
 - SQLAlchemy models
 - Alembic migration setup
 - PostgreSQL, Redis, API, and worker Docker Compose services
@@ -30,7 +35,6 @@ Implemented:
 
 Not implemented yet:
 
-- Gemini analysis
 - Report export generation
 
 ## Local Commands
@@ -90,6 +94,34 @@ R2_PUBLIC_BASE_URL=
 
 Never commit real R2 credentials.
 
+## Gemini Analysis Flow
+
+```text
+POST /api/projects/{project_id}/analyses/full
+GET /api/projects/{project_id}/analyses/latest
+GET /api/projects/{project_id}/analyses/{analysis_id}
+POST /api/projects/{project_id}/analyses/{analysis_id}/retry
+```
+
+The worker reads extracted thesis, slide, and revision-note text from the
+database, calls Gemini for structured analysis, validates the result with
+Pydantic schemas, calculates the readiness score in backend code, and stores
+the final result in `analyses.result_json`.
+
+Required local environment variables:
+
+```text
+GEMINI_API_KEY=
+GEMINI_CHEAP_MODEL=gemini-2.5-flash-lite
+GEMINI_ANALYSIS_MODEL=gemini-2.5-flash
+GEMINI_TIMEOUT_SECONDS=120
+GEMINI_MAX_THESIS_CHARS=18000
+GEMINI_MAX_SLIDE_CHARS=12000
+GEMINI_MAX_REVISION_CHARS=6000
+```
+
+Never expose Gemini credentials to the frontend.
+
 ## Analysis Queue Flow
 
 ```text
@@ -99,5 +131,4 @@ GET /api/projects/{project_id}/analyses/{analysis_id}
 POST /api/projects/{project_id}/analyses/{analysis_id}/retry
 ```
 
-Phase 5 only queues and runs a placeholder full-analysis task. Real Gemini
-analysis starts in Phase 6.
+Phase 6 queues and runs the real Gemini-backed full readiness analysis task.

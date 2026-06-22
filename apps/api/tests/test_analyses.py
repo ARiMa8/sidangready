@@ -14,6 +14,15 @@ from app.main import app
 from app.models import Base
 from app.models.analysis import Analysis
 from app.models.document import Document
+from app.schemas.ai_analysis import (
+    ExtractionBundle,
+    GeminiAnalysisOutput,
+    ProblematicClaimOutput,
+    RevisionItemOutput,
+    SlideClaim,
+    SlideConsistencyOutput,
+    ThesisStructure,
+)
 from app.services.analysis_queue_service import get_analysis_queue_service
 from app.workers.tasks import run_full_analysis_task
 
@@ -32,6 +41,92 @@ class FakeAnalysisQueueService:
             }
         )
         return job_id
+
+
+class FakeGeminiService:
+    def generate_structured(self, *, model_name, prompt, response_model):
+        if response_model is ExtractionBundle:
+            return ExtractionBundle(
+                thesis_structure=ThesisStructure(
+                    title="Analisis Antrean Dokumen Skripsi",
+                    problem_statements=["Bagaimana sistem antrean analisis berjalan?"],
+                    objectives=["Menguji pipeline analisis asinkron."],
+                    methodology="Pengujian dilakukan dengan dokumen dummy.",
+                    dataset_or_data="Data dummy untuk unit test.",
+                    implementation="FastAPI, Redis, RQ, dan PostgreSQL.",
+                    evaluation_metrics=["status antrean", "progress"],
+                    results=["Worker dapat menyelesaikan task."],
+                    conclusion="Pipeline queue dapat diproses.",
+                    limitations=["Belum memakai dokumen sungguhan pada unit test."],
+                ),
+                slide_claims=[
+                    SlideClaim(
+                        slide_number=1,
+                        slide_title="Metodologi",
+                        claims=["Worker memproses analisis secara asinkron."],
+                    )
+                ],
+            )
+        if response_model is GeminiAnalysisOutput:
+            return GeminiAnalysisOutput(
+                overall_summary="Dokumen dummy cukup untuk menguji pipeline.",
+                revision_items=[
+                    RevisionItemOutput(
+                        title="Perjelas batasan sistem",
+                        description="Batasan pengujian perlu dibuat eksplisit.",
+                        priority="important",
+                        related_chapter="BAB III",
+                        related_slide=1,
+                        reason="Agar pembaca memahami cakupan pengujian.",
+                        suggested_action="Tambahkan batasan pada metodologi.",
+                    )
+                ],
+                slide_checks=[
+                    SlideConsistencyOutput(
+                        slide_number=1,
+                        slide_title="Metodologi",
+                        detected_claim="Worker memproses analisis secara asinkron.",
+                        matched_thesis_section="BAB III",
+                        status="supported",
+                        issue_summary="Klaim didukung dokumen dummy.",
+                        suggested_fix="Pertahankan klaim.",
+                        evidence_excerpt="Worker dapat menyelesaikan task.",
+                    )
+                ],
+                problematic_claims=[
+                    ProblematicClaimOutput(
+                        slide_number=1,
+                        claim_text="Semua pengujian pasti selalu berhasil.",
+                        problem_type="too_broad",
+                        risk_level="medium",
+                        evidence_excerpt=None,
+                        suggested_revision="Ubah menjadi hasil berdasarkan skenario uji.",
+                    )
+                ],
+                defense_questions=[
+                    {
+                        "category": "Metodologi",
+                        "question": "Mengapa memakai queue untuk analisis?",
+                        "why_asked": "Penguji dapat menilai alasan desain sistem.",
+                        "answer_guidance": "Jelaskan proses asinkron dan keterbatasan VPS.",
+                        "related_section": "BAB III",
+                        "difficulty": "medium",
+                    }
+                ],
+                presentation_scripts=[
+                    {
+                        "slide_number": 1,
+                        "slide_title": "Metodologi",
+                        "estimated_duration_seconds": 60,
+                        "script_text": "Pada slide ini saya menjelaskan metodologi pengujian.",
+                        "key_points": ["queue", "worker", "progress"],
+                        "delivery_tips": ["Sampaikan alur secara runtut."],
+                    }
+                ],
+                recommended_next_actions=["Tinjau kembali batasan pengujian."],
+                disclaimer="Hasil ini adalah saran AI dan perlu ditinjau kembali.",
+            )
+        raise AssertionError(f"Unexpected response model: {response_model}")
 
 
 class AnalysisQueueFlowTestCase(unittest.TestCase):
@@ -107,18 +202,54 @@ class AnalysisQueueFlowTestCase(unittest.TestCase):
 
     def _create_document(self, project_id: str) -> None:
         with self.SessionLocal() as db:
-            document = Document(
-                id=uuid4(),
-                project_id=UUID(project_id),
-                document_type="revision_notes",
-                file_name="catatan-revisi.txt",
-                file_mime_type="text/plain",
-                file_size=1024,
-                r2_object_key=f"users/test/projects/{project_id}/raw/catatan-revisi.txt",
-                extracted_text="Catatan revisi yang sudah diekstrak. " * 12,
-                extraction_status="success",
-            )
-            db.add(document)
+            documents = [
+                Document(
+                    id=uuid4(),
+                    project_id=UUID(project_id),
+                    document_type="thesis",
+                    file_name="laporan.pdf",
+                    file_mime_type="application/pdf",
+                    file_size=2048,
+                    r2_object_key=f"users/test/projects/{project_id}/raw/laporan.pdf",
+                    extracted_text=(
+                        "BAB III Metodologi. Worker dapat menyelesaikan task. "
+                        "BAB V Kesimpulan. Pipeline queue dapat diproses. "
+                    )
+                    * 8,
+                    extraction_status="success",
+                    page_count=5,
+                ),
+                Document(
+                    id=uuid4(),
+                    project_id=UUID(project_id),
+                    document_type="slides",
+                    file_name="slides.pptx",
+                    file_mime_type=(
+                        "application/vnd.openxmlformats-officedocument."
+                        "presentationml.presentation"
+                    ),
+                    file_size=2048,
+                    r2_object_key=f"users/test/projects/{project_id}/raw/slides.pptx",
+                    extracted_text=(
+                        "[Slide 1: Metodologi]\n"
+                        "Worker memproses analisis secara asinkron."
+                    ),
+                    extraction_status="success",
+                    slide_count=1,
+                ),
+                Document(
+                    id=uuid4(),
+                    project_id=UUID(project_id),
+                    document_type="revision_notes",
+                    file_name="catatan-revisi.txt",
+                    file_mime_type="text/plain",
+                    file_size=1024,
+                    r2_object_key=f"users/test/projects/{project_id}/raw/catatan.txt",
+                    extracted_text="Catatan revisi yang sudah diekstrak. " * 12,
+                    extraction_status="success",
+                ),
+            ]
+            db.add_all(documents)
             db.commit()
 
     def test_queues_full_analysis_and_polls_progress(self) -> None:
@@ -225,7 +356,13 @@ class AnalysisQueueFlowTestCase(unittest.TestCase):
             db.commit()
             analysis_id = analysis.id
 
-        with patch("app.workers.tasks.get_session_factory", return_value=self.SessionLocal):
+        with (
+            patch("app.workers.tasks.get_session_factory", return_value=self.SessionLocal),
+            patch(
+                "app.services.analysis_orchestrator.get_gemini_service",
+                return_value=FakeGeminiService(),
+            ),
+        ):
             result = run_full_analysis_task(str(analysis_id))
 
         self.assertEqual(result["status"], "success")
@@ -233,5 +370,6 @@ class AnalysisQueueFlowTestCase(unittest.TestCase):
             analysis = db.get(Analysis, analysis_id)
             self.assertEqual(analysis.status, "success")
             self.assertEqual(analysis.progress, 100)
-            self.assertEqual(analysis.result_json["phase"], "phase_5_queue_placeholder")
-            self.assertEqual(analysis.result_json["document_count"], 1)
+            self.assertEqual(analysis.result_json["phase"], "phase_6_gemini_analysis")
+            self.assertEqual(analysis.result_json["overview"]["readiness_score"], 99)
+            self.assertEqual(analysis.model_provider, "google_gemini")
