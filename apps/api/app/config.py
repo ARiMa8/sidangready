@@ -56,6 +56,9 @@ class Settings:
     max_revision_file_mb: int
     max_total_project_upload_mb: int
     presigned_upload_expires_seconds: int
+    analysis_queue_name: str
+    analysis_job_timeout_seconds: int
+    analysis_max_retries: int
 
 
 @lru_cache
@@ -88,4 +91,10 @@ def get_settings() -> Settings:
             "PRESIGNED_UPLOAD_EXPIRES_SECONDS",
             900,
         ),
+        analysis_queue_name=_get_env("ANALYSIS_QUEUE_NAME", "sidangready-analysis"),
+        analysis_job_timeout_seconds=_parse_int_env(
+            "ANALYSIS_JOB_TIMEOUT_SECONDS",
+            900,
+        ),
+        analysis_max_retries=_parse_int_env("ANALYSIS_MAX_RETRIES", 1),
     )

@@ -8,3 +8,4 @@ boto3==1.35.90
 PyMuPDF==1.25.1
 python-docx==1.1.2
 python-pptx==1.0.2
+rq==2.10.0

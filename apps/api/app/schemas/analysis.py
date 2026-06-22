@@ -27,9 +27,17 @@ class AnalysisResponse(BaseModel):
     status: AnalysisStatus
     progress: int = Field(ge=0, le=100)
     current_step: str | None
+    queue_job_id: str | None
+    retry_count: int = Field(ge=0)
+    max_retries: int = Field(ge=0)
     model_provider: str | None
     model_name: str | None
     result_json: dict[str, Any] | None
     error_message: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class AnalysisQueueResponse(BaseModel):
+    message: str
+    analysis: AnalysisResponse

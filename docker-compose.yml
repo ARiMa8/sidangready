@@ -9,6 +9,9 @@ services:
       API_PREFIX: /api
       DATABASE_URL: postgresql+psycopg://sidangready:sid4ngr3ady@postgres:5432/sidangready
       REDIS_URL: redis://redis:6379/0
+      ANALYSIS_QUEUE_NAME: ${ANALYSIS_QUEUE_NAME:-sidangready-analysis}
+      ANALYSIS_JOB_TIMEOUT_SECONDS: ${ANALYSIS_JOB_TIMEOUT_SECONDS:-900}
+      ANALYSIS_MAX_RETRIES: ${ANALYSIS_MAX_RETRIES:-1}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
@@ -32,6 +35,43 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  worker:
+    build:
+      context: ./apps/api
+    container_name: sidangready-worker
+    command: python -m app.workers.worker
+    environment:
+      APP_NAME: SidangReady AI API
+      ENVIRONMENT: development
+      API_PREFIX: /api
+      DATABASE_URL: postgresql+psycopg://sidangready:sid4ngr3ady@postgres:5432/sidangready
+      REDIS_URL: redis://redis:6379/0
+      ANALYSIS_QUEUE_NAME: ${ANALYSIS_QUEUE_NAME:-sidangready-analysis}
+      ANALYSIS_JOB_TIMEOUT_SECONDS: ${ANALYSIS_JOB_TIMEOUT_SECONDS:-900}
+      ANALYSIS_MAX_RETRIES: ${ANALYSIS_MAX_RETRIES:-1}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+      R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
+      PRESIGNED_UPLOAD_EXPIRES_SECONDS: ${PRESIGNED_UPLOAD_EXPIRES_SECONDS:-900}
+      MAX_THESIS_FILE_MB: ${MAX_THESIS_FILE_MB:-30}
+      MAX_SLIDE_FILE_MB: ${MAX_SLIDE_FILE_MB:-30}
+      MAX_REVISION_FILE_MB: ${MAX_REVISION_FILE_MB:-10}
+      MAX_TOTAL_PROJECT_UPLOAD_MB: ${MAX_TOTAL_PROJECT_UPLOAD_MB:-70}
+    depends_on:
+      api:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     container_name: sidangready-postgres
@@ -40,7 +80,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-sidangready}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sid4ngr3ady}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -55,7 +95,7 @@ services:
     container_name: sidangready-redis
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6380}:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped

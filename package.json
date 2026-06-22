@@ -12,6 +12,7 @@
     "api:compile": "python -m compileall apps/api/app",
     "api:test": "python -m unittest discover -s apps/api/tests -t apps/api",
     "api:migration:sql": "alembic -c apps/api/alembic.ini upgrade head --sql",
+    "api:worker": "cd apps/api && python -m app.workers.worker",
     "check": "npm run lint && npm run build && npm run api:compile && npm run api:test && npm run api:migration:sql"
   }
 }
