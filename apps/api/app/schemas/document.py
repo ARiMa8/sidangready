@@ -49,7 +49,13 @@ class DocumentResponse(DocumentCreate):
     id: UUID
     project_id: UUID
     extraction_status: ExtractionStatus
+    extraction_warning: str | None
+    extraction_error_message: str | None
     page_count: int | None
     slide_count: int | None
     created_at: datetime
     updated_at: datetime
+
+
+class DocumentExtractionResponse(DocumentResponse):
+    extracted_text_length: int = 0

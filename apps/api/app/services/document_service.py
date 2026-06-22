@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.document import Document
 from app.schemas.document import DocumentConfirmRequest
+from app.services.document_parser_service import ParsedDocument
 
 
 def get_total_project_upload_size(db: Session, project_id: UUID) -> int:
@@ -65,9 +66,34 @@ def create_document_record(
         file_size=payload.file_size,
         r2_object_key=payload.r2_object_key,
         extraction_status="pending",
+        extraction_warning=None,
+        extraction_error_message=None,
     )
     db.add(document)
     return document
+
+
+def mark_document_extraction_running(document: Document) -> None:
+    document.extraction_status = "running"
+    document.extraction_warning = None
+    document.extraction_error_message = None
+
+
+def apply_document_extraction_result(
+    document: Document,
+    result: ParsedDocument,
+) -> None:
+    document.extracted_text = result.text
+    document.extraction_status = result.extraction_status
+    document.extraction_warning = result.extraction_warning
+    document.extraction_error_message = None
+    document.page_count = result.page_count
+    document.slide_count = result.slide_count
+
+
+def mark_document_extraction_failed(document: Document, error_message: str) -> None:
+    document.extraction_status = "failed"
+    document.extraction_error_message = error_message
 
 
 def delete_document_record(db: Session, document: Document) -> None:

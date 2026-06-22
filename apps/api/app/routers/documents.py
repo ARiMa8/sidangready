@@ -10,18 +10,23 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.document import (
     DocumentConfirmRequest,
+    DocumentExtractionResponse,
     DocumentPresignRequest,
     DocumentPresignResponse,
     DocumentResponse,
 )
 from app.services.auth_service import get_current_user
 from app.services.document_service import (
+    apply_document_extraction_result,
     create_document_record,
     delete_document_record,
     get_document_for_project,
     get_total_project_upload_size,
     list_documents_for_project,
+    mark_document_extraction_failed,
+    mark_document_extraction_running,
 )
+from app.services.document_parser_service import DocumentParserError, parse_document_bytes
 from app.services.project_service import get_project_for_user
 from app.services.r2_storage_service import (
     R2StorageService,
@@ -135,6 +140,71 @@ def list_documents(
     get_project_for_user(db, project_id=project_id, user_id=current_user.id)
     documents = list_documents_for_project(db, project_id)
     return [DocumentResponse.model_validate(document) for document in documents]
+
+
+@router.post("/{document_id}/extract", response_model=DocumentExtractionResponse)
+def extract_document_text(
+    project_id: UUID,
+    document_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    storage: R2StorageService = Depends(get_r2_storage_service),
+) -> DocumentExtractionResponse:
+    get_project_for_user(db, project_id=project_id, user_id=current_user.id)
+    document = get_document_for_project(db, document_id=document_id, project_id=project_id)
+
+    if not document.r2_object_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Dokumen belum memiliki object key storage.",
+        )
+
+    mark_document_extraction_running(document)
+    db.commit()
+
+    try:
+        file_bytes = storage.get_object_bytes(document.r2_object_key)
+    except StorageConfigurationError as exc:
+        mark_document_extraction_failed(document, "Konfigurasi Cloudflare R2 belum lengkap.")
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Konfigurasi Cloudflare R2 belum lengkap.",
+        ) from exc
+    except Exception as exc:
+        mark_document_extraction_failed(
+            document,
+            "File dokumen belum dapat diambil dari storage.",
+        )
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="File dokumen belum dapat diambil dari storage.",
+        ) from exc
+
+    try:
+        parsed_document = parse_document_bytes(
+            file_name=document.file_name,
+            file_mime_type=document.file_mime_type,
+            file_bytes=file_bytes,
+            document_type=document.document_type,
+        )
+    except DocumentParserError as exc:
+        mark_document_extraction_failed(document, str(exc))
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    apply_document_extraction_result(document, parsed_document)
+    db.commit()
+    db.refresh(document)
+
+    response = DocumentExtractionResponse.model_validate(document)
+    return response.model_copy(
+        update={"extracted_text_length": len(document.extracted_text or "")}
+    )
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -61,6 +61,13 @@ class R2StorageService:
             Key=object_key,
         )
 
+    def get_object_bytes(self, object_key: str) -> bytes:
+        response = self.client.get_object(
+            Bucket=self.settings.r2_bucket_name,
+            Key=object_key,
+        )
+        return response["Body"].read()
+
 
 def get_r2_storage_service() -> R2StorageService:
     return R2StorageService(get_settings())

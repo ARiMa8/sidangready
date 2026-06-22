@@ -28,6 +28,8 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default="pending",
         nullable=False,
     )
+    extraction_warning: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extraction_error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     slide_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

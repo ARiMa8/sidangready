@@ -33,6 +33,7 @@ dev-server*.log
 apps/web/dev-server*.log
 
 # local files and uploads
+local-data/
 uploads/
 exports/
 *.sqlite

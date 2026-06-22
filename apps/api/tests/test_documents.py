@@ -14,6 +14,7 @@ from app.services.r2_storage_service import get_r2_storage_service
 class FakeR2StorageService:
     def __init__(self) -> None:
         self.deleted_keys: list[str] = []
+        self.objects: dict[str, bytes] = {}
 
     def generate_presigned_upload_url(
         self,
@@ -28,6 +29,9 @@ class FakeR2StorageService:
 
     def delete_object(self, object_key: str) -> None:
         self.deleted_keys.append(object_key)
+
+    def get_object_bytes(self, object_key: str) -> bytes:
+        return self.objects[object_key]
 
 
 class DocumentUploadFlowTestCase(unittest.TestCase):
@@ -162,3 +166,62 @@ class DocumentUploadFlowTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_extracts_revision_note_text_from_storage(self) -> None:
+        headers = self._create_auth_headers()
+        project_id = self._create_project(headers)
+
+        presign_response = self.client.post(
+            f"/api/projects/{project_id}/documents/presign",
+            headers=headers,
+            json={
+                "document_type": "revision_notes",
+                "file_name": "catatan-revisi.txt",
+                "file_mime_type": "text/plain",
+                "file_size": 2_000,
+            },
+        )
+        self.assertEqual(presign_response.status_code, 200)
+        presign_data = presign_response.json()
+
+        confirm_response = self.client.post(
+            f"/api/projects/{project_id}/documents/confirm",
+            headers=headers,
+            json={
+                "document_id": presign_data["document_id"],
+                "document_type": "revision_notes",
+                "file_name": "catatan-revisi.txt",
+                "file_mime_type": "text/plain",
+                "file_size": 2_000,
+                "r2_object_key": presign_data["object_key"],
+            },
+        )
+        self.assertEqual(confirm_response.status_code, 201)
+        document_id = confirm_response.json()["id"]
+
+        revision_note = (
+            "Catatan revisi sidang: perjelas rumusan masalah, "
+            "tambahkan batasan penelitian, dan sesuaikan kesimpulan "
+            "dengan tujuan penelitian. "
+        ) * 4
+        self.fake_storage.objects[presign_data["object_key"]] = revision_note.encode(
+            "utf-8"
+        )
+
+        extract_response = self.client.post(
+            f"/api/projects/{project_id}/documents/{document_id}/extract",
+            headers=headers,
+        )
+
+        self.assertEqual(extract_response.status_code, 200)
+        extract_data = extract_response.json()
+        self.assertEqual(extract_data["extraction_status"], "success")
+        self.assertIsNone(extract_data["extraction_warning"])
+        self.assertGreater(extract_data["extracted_text_length"], 300)
+
+        list_response = self.client.get(
+            f"/api/projects/{project_id}/documents",
+            headers=headers,
+        )
+        listed_document = list_response.json()[0]
+        self.assertEqual(listed_document["extraction_status"], "success")
