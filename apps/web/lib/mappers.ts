@@ -29,6 +29,7 @@ export function mapProject(
 ): Project {
   const result = latestAnalysis?.result_json;
   const criticalIssueCount = result?.overview?.critical_issues_count ?? 0;
+  const openCriticalIssueCount = countOpenCriticalIssues(result);
 
   return {
     id: project.id,
@@ -45,7 +46,21 @@ export function mapProject(
     documentSummary: formatDocumentSummary(documents),
     analysisStatus: mapAnalysisStatus(latestAnalysis?.status),
     criticalIssueCount,
+    openCriticalIssueCount,
   };
+}
+
+function countOpenCriticalIssues(result: ApiAnalysis["result_json"] | undefined): number {
+  const items = [
+    ...(result?.official_revision_items ?? []),
+    ...(result?.revision_items ?? []),
+  ];
+  return items.filter(
+    (item) =>
+      item.priority === "critical" &&
+      item.status !== "done" &&
+      item.status !== "ignored",
+  ).length;
 }
 
 function formatDocumentSummary(documents: ApiDocument[]): string {

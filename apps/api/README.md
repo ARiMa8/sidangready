@@ -2,7 +2,7 @@
 
 FastAPI backend for SidangReady AI.
 
-Current scope: Phase 7 complete.
+Current scope: Phase 8 complete.
 
 Implemented:
 
@@ -30,6 +30,9 @@ Implemented:
 - AI result persistence in `analyses.result_json`
 - Result endpoints for frontend consumption
 - Checklist status update endpoint
+- Markdown, PDF, and DOCX export generation
+- Export metadata persistence
+- Export list, sort, format filter, and authenticated download endpoints
 - SQLAlchemy models
 - Alembic migration setup
 - PostgreSQL, Redis, API, and worker Docker Compose services
@@ -37,7 +40,7 @@ Implemented:
 
 Not implemented yet:
 
-- Report export generation
+- File retention cleanup job
 
 ## Local Commands
 
@@ -139,9 +142,24 @@ GET /api/projects/{project_id}/results/presentation-script
 ```
 
 `revision-checklist` contains official revision-note items derived only from
-user-provided revision notes. `checklist` contains AI findings and improvement
+user-provided revision notes. `checklist` contains findings and improvement
 actions from the readiness analysis. These endpoints read the latest persisted
-analysis result. File export generation is intentionally reserved for Phase 8.
+analysis result.
+
+## Export Flow
+
+```text
+POST /api/projects/{project_id}/exports
+GET /api/projects/{project_id}/exports?sort=latest|oldest&export_type=all|markdown|pdf|docx
+GET /api/projects/{project_id}/exports/{export_id}/download
+```
+
+Phase 8 generates Markdown, PDF, or DOCX final readiness reports from the latest
+successful analysis, stores generated files in Cloudflare R2, persists metadata
+in PostgreSQL, supports backend-driven latest/oldest sorting and format
+filtering, and returns a short-lived download URL through the authenticated API.
+Generated reports include a clickable table of contents and cleaner section
+formatting.
 
 ## Analysis Queue Flow
 
@@ -154,3 +172,4 @@ POST /api/projects/{project_id}/analyses/{analysis_id}/retry
 
 Phase 6 queues and runs the real Gemini-backed full readiness analysis task.
 Phase 7 exposes the persisted result to the frontend.
+Phase 8 adds report export generation, sorting, filtering, and download flow.

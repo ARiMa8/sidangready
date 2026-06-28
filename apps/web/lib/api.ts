@@ -223,6 +223,25 @@ export interface ApiFullReadinessResult {
   raw_disclaimer: string;
 }
 
+export interface ApiExport {
+  id: string;
+  project_id: string;
+  export_type: "markdown" | "pdf" | "docx";
+  file_name: string;
+  file_mime_type: string;
+  file_size: number;
+  r2_object_key: string;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+}
+
+export interface ApiExportDownload {
+  export_id: string;
+  download_url: string;
+  expires_in: number;
+}
+
 type RequestOptions = Omit<RequestInit, "body"> & {
   token?: string | null;
   body?: BodyInit | object | null;
@@ -471,6 +490,39 @@ export const api = {
   getPresentationScript(token: string, projectId: string) {
     return apiFetch<ApiPresentationScript[]>(
       `/api/projects/${projectId}/results/presentation-script`,
+      { token },
+    );
+  },
+
+  listExports(
+    token: string,
+    projectId: string,
+    sort: "latest" | "oldest" = "latest",
+    exportType: "all" | ApiExport["export_type"] = "all",
+  ) {
+    return apiFetch<ApiExport[]>(
+      `/api/projects/${projectId}/exports?sort=${sort}&export_type=${exportType}`,
+      {
+        token,
+      },
+    );
+  },
+
+  createExport(
+    token: string,
+    projectId: string,
+    exportType: ApiExport["export_type"],
+  ) {
+    return apiFetch<ApiExport>(`/api/projects/${projectId}/exports`, {
+      method: "POST",
+      token,
+      body: { export_type: exportType },
+    });
+  },
+
+  getExportDownloadUrl(token: string, projectId: string, exportId: string) {
+    return apiFetch<ApiExportDownload>(
+      `/api/projects/${projectId}/exports/${exportId}/download`,
       { token },
     );
   },

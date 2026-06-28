@@ -6,6 +6,18 @@ export function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+export function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
+}
+
 export function formatDuration(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;

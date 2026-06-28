@@ -22,10 +22,10 @@ Upload thesis report + upload defense slides + add revision notes
 Current implementation status:
 
 ```text
-Phase 7: Frontend API integration complete
+Phase 8: Report export complete
 ```
 
-The repository now contains a real frontend-to-backend MVP flow: authentication, project dashboard, Cloudflare R2 document upload, document parsing, Redis-backed worker queue, Gemini-powered structured analysis, progress polling, and result pages. This is an LLM-powered document analysis SaaS foundation, not a full Agentic AI system. Real report file generation is planned for Phase 8.
+The repository now contains a real frontend-to-backend MVP flow: authentication, project dashboard, Cloudflare R2 document upload, document parsing, Redis-backed worker queue, Gemini-powered structured analysis, progress polling, result pages, and report export. This is an LLM-powered document analysis SaaS foundation, not a full Agentic AI system.
 
 ## Product Positioning
 
@@ -52,7 +52,7 @@ Implemented in the current frontend:
 - Problematic claim cards
 - Examiner question cards
 - Presentation script panel
-- Export report page connected to real analysis summary
+- Export report page with Markdown, PDF, and DOCX generation and download flow
 
 Implemented in the current backend foundation:
 
@@ -62,7 +62,7 @@ Implemented in the current backend foundation:
 - JWT bearer authentication
 - `GET /api/auth/me`
 - Authenticated project CRUD
-- SQLAlchemy models for users, projects, documents, and analyses
+- SQLAlchemy models for users, projects, documents, analyses, and exports
 - Alembic migration setup
 - Docker Compose services for API, PostgreSQL, and Redis
 - Backend smoke tests
@@ -80,10 +80,10 @@ Implemented in the current backend foundation:
 - AI result persistence in `analyses.result_json`
 - Result routes for overview, checklist, slide consistency, problematic claims, defense questions, and presentation script
 - Checklist item status update route
+- Markdown, PDF, and DOCX export creation, listing, sorting, filtering, and download routes
 
-Planned for the full MVP:
+Planned after the current MVP slice:
 
-- Markdown report export
 - File retention and beta quota controls
 
 ## Ethical Scope
@@ -130,10 +130,6 @@ Current backend:
 - Google Gemini API
 - RQ worker queue
 - Docker Compose for VPS deployment
-
-Planned integrations:
-
-- Markdown export generation
 
 ## Repository Structure
 
@@ -400,9 +396,24 @@ GET /api/projects/{project_id}/results/presentation-script
 ```
 
 `revision-checklist` is reserved for official user-provided thesis revision notes.
-`checklist` contains AI findings and improvement actions from the readiness analysis.
-The export page currently reads the latest analysis summary. Actual Markdown file
-generation and download endpoints are planned for Phase 8.
+`checklist` contains findings and improvement actions from the readiness analysis.
+
+## Export API Flow
+
+Phase 8 adds report export generation and authenticated download flow:
+
+```text
+POST /api/projects/{project_id}/exports
+GET /api/projects/{project_id}/exports?sort=latest|oldest&export_type=all|markdown|pdf|docx
+GET /api/projects/{project_id}/exports/{export_id}/download
+```
+
+The backend generates Markdown, PDF, or DOCX final readiness reports from the
+latest successful analysis, stores generated files in Cloudflare R2, persists
+export metadata in PostgreSQL, supports backend-driven latest/oldest sorting
+and format filtering, and returns a short-lived download URL through the
+authenticated API. Generated reports include a clickable table of contents and
+improved section formatting for easier review.
 
 ## Deployment Target
 
@@ -423,7 +434,7 @@ The frontend should use:
 NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
 ```
 
-The backend, worker, database, storage, AI analysis pipeline, and frontend API integration are implemented locally. Production reverse proxy configuration is still planned.
+The backend, worker, database, storage, analysis pipeline, frontend API integration, and report export flow are implemented locally. Production reverse proxy configuration is still planned.
 
 ## Roadmap
 
@@ -435,7 +446,7 @@ Phase 4: Document parsing for PDF, DOCX, PPTX, and TXT - complete
 Phase 5: Queue and worker for asynchronous analysis - complete  
 Phase 6: Gemini-powered structured analysis - complete  
 Phase 7: Frontend API integration - complete  
-Phase 8: Markdown report export - next  
+Phase 8: Report export - complete  
 Phase 9: Beta safety, quotas, cleanup jobs, and deployment documentation
 
 ## Agentic Terminology
@@ -448,9 +459,10 @@ Phase 9: Beta safety, quotas, cleanup jobs, and deployment documentation
 
 ### Phase 8 - Export Report Generation
 
-- Generate Markdown final readiness report.
+- Generate Markdown/PDF/DOCX final readiness report.
 - Store export in R2.
-- Add export metadata and download flow.
+- Add export metadata, sorting, filtering, table of contents, and download flow.
+- Status: complete.
 - This phase is not agentic yet.
 
 ### Phase 9 - Project Memory and Revision State
@@ -497,4 +509,4 @@ No license has been selected yet. All rights are reserved unless a license is ad
 
 ## Status
 
-SidangReady AI is currently in MVP development. The frontend can authenticate users, create projects, upload documents, trigger extraction, queue analysis, poll progress, and render persisted backend results. Markdown export generation is the next major feature.
+SidangReady AI is currently in MVP development. The frontend can authenticate users, create projects, upload documents, trigger extraction, queue analysis, poll progress, render persisted backend results, and generate/download Markdown, PDF, and DOCX readiness reports.

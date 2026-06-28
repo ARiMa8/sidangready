@@ -39,6 +39,7 @@ export interface Project {
   documentSummary: string;
   analysisStatus: AnalysisStatus;
   criticalIssueCount: number;
+  openCriticalIssueCount: number;
 }
 
 export interface AnalysisStep {

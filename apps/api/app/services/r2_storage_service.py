@@ -63,12 +63,41 @@ class R2StorageService:
             Key=object_key,
         )
 
+    def put_object_bytes(
+        self,
+        object_key: str,
+        file_bytes: bytes,
+        content_type: str,
+    ) -> None:
+        self.client.put_object(
+            Bucket=self.settings.r2_bucket_name,
+            Key=object_key,
+            Body=file_bytes,
+            ContentType=content_type,
+        )
+
     def get_object_bytes(self, object_key: str) -> bytes:
         response = self.client.get_object(
             Bucket=self.settings.r2_bucket_name,
             Key=object_key,
         )
         return response["Body"].read()
+
+    def generate_presigned_download_url(
+        self,
+        object_key: str,
+        file_name: str,
+        expires_in: int,
+    ) -> str:
+        return self.client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.settings.r2_bucket_name,
+                "Key": object_key,
+                "ResponseContentDisposition": f'attachment; filename="{file_name}"',
+            },
+            ExpiresIn=expires_in,
+        )
 
 
 def get_r2_storage_service() -> R2StorageService:

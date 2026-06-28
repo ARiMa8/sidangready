@@ -120,6 +120,18 @@ def build_raw_object_key(
     )
 
 
+def build_export_object_key(
+    user_id: object,
+    project_id: object,
+    export_id: object,
+    file_name: str,
+) -> str:
+    return (
+        f"users/{user_id}/projects/{project_id}/exports/"
+        f"{export_id}-{safe_filename(file_name)}"
+    )
+
+
 def validate_object_key_matches_document(
     object_key: str,
     user_id: object,

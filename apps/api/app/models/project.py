@@ -44,3 +44,9 @@ class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    exports = relationship(
+        "Export",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

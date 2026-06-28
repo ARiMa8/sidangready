@@ -22,6 +22,8 @@ function actionHref(project: Project) {
 }
 
 export function ProjectCard({ project }: { project: Project }) {
+  const hasOpenCriticalIssues = project.openCriticalIssueCount > 0;
+
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="border-b border-border">
@@ -56,12 +58,18 @@ export function ProjectCard({ project }: { project: Project }) {
           <div className="rounded-md border border-border bg-slate-950/50 p-3">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <AlertCircle className="h-3.5 w-3.5" />
-              Isu kritis
+              Kritis terbuka
             </div>
-            <p className="mt-2 text-xl font-semibold text-rose-300">
-              {project.criticalIssueCount}
+            <p
+              className={`mt-2 text-xl font-semibold ${
+                hasOpenCriticalIssues ? "text-rose-300" : "text-emerald-300"
+              }`}
+            >
+              {project.openCriticalIssueCount}
             </p>
-            <p className="mt-1 text-xs text-slate-500">Perlu perhatian</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {project.criticalIssueCount} total terdeteksi
+            </p>
           </div>
         </div>
 

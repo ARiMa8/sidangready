@@ -29,6 +29,7 @@ export const mockProjects: Project[] = [
     documentSummary: "laporan, slide, catatan revisi",
     analysisStatus: "complete",
     criticalIssueCount: 5,
+    openCriticalIssueCount: 5,
   },
   {
     id: "social-sentiment",
@@ -46,6 +47,7 @@ export const mockProjects: Project[] = [
     documentSummary: "laporan, slide, catatan revisi",
     analysisStatus: "running",
     criticalIssueCount: 2,
+    openCriticalIssueCount: 2,
   },
   {
     id: "crm-predict",
@@ -63,6 +65,7 @@ export const mockProjects: Project[] = [
     documentSummary: "laporan",
     analysisStatus: "queued",
     criticalIssueCount: 0,
+    openCriticalIssueCount: 0,
   },
 ];
 
@@ -468,13 +471,13 @@ export const exportOptions: ExportOption[] = [
     title: "PDF",
     description: "Format siap cetak untuk arsip atau diskusi dengan pembimbing.",
     format: "pdf",
-    availability: "planned",
+    availability: "available",
   },
   {
     id: "docx",
     title: "DOCX",
     description: "Format dokumen untuk penyuntingan lanjutan.",
     format: "docx",
-    availability: "planned",
+    availability: "available",
   },
 ];

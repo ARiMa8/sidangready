@@ -25,6 +25,7 @@ import {
   api,
   ApiError,
   type ApiDefenseQuestion,
+  type ApiExport,
   type ApiOverview,
   type ApiPresentationScript,
   type ApiProblematicClaim,
@@ -59,11 +60,17 @@ type ResultData =
   | ApiSlideCheck[]
   | ApiProblematicClaim[]
   | ApiDefenseQuestion[]
-  | ApiPresentationScript[];
+  | ApiPresentationScript[]
+  | ExportResultData;
 
 interface ChecklistResultData {
   officialRevisionItems: ApiRevisionItem[];
   findingItems: ApiRevisionItem[];
+}
+
+interface ExportResultData {
+  overview: ApiOverview;
+  exports: ApiExport[];
 }
 
 const viewCopy: Record<ResultView, { title: string; description: string }> = {
@@ -109,6 +116,14 @@ export function ResultViewClient({
   const [overview, setOverview] = useState<ApiOverview | null>(null);
   const [data, setData] = useState<ResultData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeCreateType, setActiveCreateType] = useState<ApiExport["export_type"] | null>(
+    null,
+  );
+  const [activeDownloadId, setActiveDownloadId] = useState<string | null>(null);
+  const [exportSort, setExportSort] = useState<"latest" | "oldest">("latest");
+  const [exportFilter, setExportFilter] = useState<"all" | ApiExport["export_type"]>(
+    "all",
+  );
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -123,8 +138,16 @@ export function ResultViewClient({
       const overviewData = await api.getOverview(activeToken, projectId);
       setOverview(overviewData);
 
-      if (view === "overview" || view === "export") {
+      if (view === "overview") {
         setData(overviewData);
+      } else if (view === "export") {
+        const exports = await api.listExports(
+          activeToken,
+          projectId,
+          exportSort,
+          exportFilter,
+        );
+        setData({ overview: overviewData, exports });
       } else if (view === "checklist") {
         const [officialRevisionItems, findingItems] = await Promise.all([
           api.getOfficialRevisionChecklist(activeToken, projectId),
@@ -149,7 +172,7 @@ export function ResultViewClient({
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, token, view]);
+  }, [exportFilter, exportSort, projectId, token, view]);
 
   useEffect(() => {
     if (!token) return;
@@ -193,6 +216,47 @@ export function ResultViewClient({
           ? err.message
           : "Status checklist belum dapat diperbarui.",
       );
+    }
+  }
+
+  async function createExport(exportType: ApiExport["export_type"]) {
+    if (!token) return;
+    setActiveCreateType(exportType);
+    setError(null);
+    try {
+      await api.createExport(token, projectId, exportType);
+      const nextFilter = exportFilter === "all" ? "all" : exportType;
+      if (exportFilter !== "all" && exportFilter !== exportType) {
+        setExportFilter(exportType);
+      }
+      const exports = await api.listExports(token, projectId, exportSort, nextFilter);
+      setData((current) =>
+        current && !Array.isArray(current) && "exports" in current
+          ? { ...current, exports }
+          : current,
+      );
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "File export belum dapat dibuat.",
+      );
+    } finally {
+      setActiveCreateType(null);
+    }
+  }
+
+  async function downloadExport(exportId: string) {
+    if (!token) return;
+    setActiveDownloadId(exportId);
+    setError(null);
+    try {
+      const download = await api.getExportDownloadUrl(token, projectId, exportId);
+      window.open(download.download_url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "File export belum dapat diunduh.",
+      );
+    } finally {
+      setActiveDownloadId(null);
     }
   }
 
@@ -246,6 +310,14 @@ export function ResultViewClient({
           project,
           projectId,
           onChecklistStatusChange: updateChecklistStatus,
+          onCreateExport: createExport,
+          onExportSortChange: setExportSort,
+          onExportFilterChange: setExportFilter,
+          onDownloadExport: downloadExport,
+          activeCreateType,
+          activeDownloadId,
+          exportSort,
+          exportFilter,
         })
       )}
     </AppShell>
@@ -302,7 +374,7 @@ function HeaderActions({
     return <StatusBadge tone="indigo">{presentationModeLabel(project)}</StatusBadge>;
   }
   if (view === "export") {
-    return <StatusBadge tone="amber">Export generation Phase 8</StatusBadge>;
+    return <StatusBadge tone="emerald">Export aktif</StatusBadge>;
   }
   return null;
 }
@@ -318,6 +390,14 @@ function renderView({
   project,
   projectId,
   onChecklistStatusChange,
+  onCreateExport,
+  onExportSortChange,
+  onExportFilterChange,
+  onDownloadExport,
+  activeCreateType,
+  activeDownloadId,
+  exportSort,
+  exportFilter,
 }: {
   view: ResultView;
   data: ResultData | null;
@@ -329,6 +409,14 @@ function renderView({
     status: ChecklistStatus,
     checklistType?: "official" | "finding",
   ) => void;
+  onCreateExport: (exportType: ApiExport["export_type"]) => void;
+  onExportSortChange: (sort: "latest" | "oldest") => void;
+  onExportFilterChange: (filter: "all" | ApiExport["export_type"]) => void;
+  onDownloadExport: (exportId: string) => void;
+  activeCreateType: ApiExport["export_type"] | null;
+  activeDownloadId: string | null;
+  exportSort: "latest" | "oldest";
+  exportFilter: "all" | ApiExport["export_type"];
 }) {
   if (view === "overview") {
     const overviewData = (data as ApiOverview | null) ?? {};
@@ -509,7 +597,9 @@ function renderView({
     );
   }
 
-  const overviewData = overview ?? {};
+  const exportData = data as ExportResultData | null;
+  const overviewData = exportData?.overview ?? overview ?? {};
+  const exports = exportData?.exports ?? [];
   return (
     <>
       <Card className="mb-5">
@@ -542,14 +632,25 @@ function renderView({
         </CardContent>
       </Card>
 
-      <ExportOptionsCard options={exportOptions} />
+      <ExportOptionsCard
+        options={exportOptions}
+        exports={exports}
+        activeCreateType={activeCreateType}
+        activeDownloadId={activeDownloadId}
+        sortOrder={exportSort}
+        filter={exportFilter}
+        onSortChange={onExportSortChange}
+        onFilterChange={onExportFilterChange}
+        onCreate={onCreateExport}
+        onDownload={onDownloadExport}
+      />
 
       <Card className="mt-5 border-emerald-500/30 bg-emerald-500/5">
         <CardContent className="flex gap-3 p-5 text-sm leading-6 text-emerald-100/80">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
           <p>
-            Export generation akan dibuat pada Phase 8. Halaman ini sudah memakai
-            ringkasan hasil analisis terbaru dari backend.
+            File export dibuat dari hasil analisis terbaru dan tetap perlu
+            ditinjau ulang sebelum digunakan sebagai dokumen final revisi.
           </p>
         </CardContent>
       </Card>

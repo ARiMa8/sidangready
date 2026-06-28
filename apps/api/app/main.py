@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import analyses, auth, documents, health, projects, results
+from app.routers import analyses, auth, documents, exports, health, projects, results
 
 
 def create_app() -> FastAPI:
@@ -32,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(documents.router, prefix=settings.api_prefix)
     app.include_router(analyses.router, prefix=settings.api_prefix)
     app.include_router(results.router, prefix=settings.api_prefix)
+    app.include_router(exports.router, prefix=settings.api_prefix)
 
     @app.get("/", tags=["root"])
     def root() -> dict[str, str]:
