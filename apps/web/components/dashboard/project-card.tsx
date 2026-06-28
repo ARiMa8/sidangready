@@ -15,8 +15,10 @@ function statusTone(status: ProjectStatus): BadgeTone {
 }
 
 function actionHref(project: Project) {
-  if (project.status === "analyzing") return `/projects/${project.id}/progress`;
-  return `/projects/${project.id}/overview`;
+  if (project.analysisStatus === "complete" || project.readinessScore !== null) {
+    return `/projects/${project.id}/overview`;
+  }
+  return `/projects/${project.id}/progress`;
 }
 
 export function ProjectCard({ project }: { project: Project }) {
@@ -70,7 +72,7 @@ export function ProjectCard({ project }: { project: Project }) {
           </div>
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-slate-500" />
-            {project.documentCount} dokumen
+            {project.documentCount} dokumen: {project.documentSummary}
           </div>
           <div className="flex items-center gap-2">
             <Workflow className="h-4 w-4 text-slate-500" />

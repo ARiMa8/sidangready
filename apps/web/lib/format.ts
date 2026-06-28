@@ -22,3 +22,10 @@ export function getScoreCategory(score: number) {
   if (score >= 40) return "Perlu Banyak Revisi";
   return "Belum Siap";
 }
+
+export function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  const kilobytes = bytes / 1024;
+  if (kilobytes < 1024) return `${kilobytes.toFixed(1)} KB`;
+  return `${(kilobytes / 1024).toFixed(1)} MB`;
+}

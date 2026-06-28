@@ -24,7 +24,7 @@ const problems = [
 
 const features = [
   { title: "Cek Konsistensi Slide", icon: SearchCheck },
-  { title: "Checklist Revisi Otomatis", icon: ListChecks },
+  { title: "Checklist Perbaikan Otomatis", icon: ListChecks },
   { title: "Deteksi Klaim Bermasalah", icon: ShieldAlert },
   { title: "Pertanyaan Penguji", icon: HelpCircle },
   { title: "Script Presentasi", icon: Presentation },
@@ -74,7 +74,7 @@ export default function LandingPage() {
         <div className="section-shell flex min-h-[600px] items-center pb-16">
           <div className="max-w-3xl">
             <p className="mb-4 inline-flex rounded-md border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-200">
-              Skripsi Defense & Revision Agent
+              Skripsi Defense & Revision Assistant
             </p>
             <h1 className="text-5xl font-semibold tracking-normal text-slate-50 md:text-7xl">
               SidangReady AI
@@ -85,7 +85,7 @@ export default function LandingPage() {
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300">
               SidangReady AI membantu mahasiswa menganalisis laporan dan PPT
-              sidang, menemukan ketidakkonsistenan, menyusun checklist revisi,
+              sidang, menemukan ketidakkonsistenan, menyusun checklist perbaikan,
               menyiapkan pertanyaan penguji, dan membuat laporan kesiapan
               sidang.
             </p>
@@ -216,7 +216,7 @@ export default function LandingPage() {
               {[
                 "Readiness Score 78/100",
                 "5 isu kritis",
-                "18 checklist revisi",
+                "18 checklist perbaikan",
                 "28 pertanyaan penguji",
               ].map((item) => (
                 <div

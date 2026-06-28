@@ -1,5 +1,7 @@
 import { CheckSquare, Circle, Clock3, MinusCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CHECKLIST_STATUS_LABEL, PRIORITY_LABEL } from "@/lib/constants";
@@ -14,11 +16,43 @@ function statusIcon(status: ChecklistStatus) {
   return <Circle className="h-4 w-4 text-slate-500" />;
 }
 
-export function RevisionChecklist({ items }: { items: RevisionItem[] }) {
+interface RevisionChecklistProps {
+  title?: string;
+  description?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  items: RevisionItem[];
+  onStatusChange?: (itemId: string, status: ChecklistStatus) => void;
+}
+
+const nextStatusOptions: ChecklistStatus[] = ["todo", "in_progress", "done", "ignored"];
+
+export function RevisionChecklist({
+  title,
+  description,
+  emptyTitle = "Checklist kosong",
+  emptyDescription = "Belum ada item checklist.",
+  items,
+  onStatusChange,
+}: RevisionChecklistProps) {
   return (
     <div className="space-y-5">
+      {title || description ? (
+        <div>
+          {title ? <h2 className="text-xl font-semibold">{title}</h2> : null}
+          {description ? (
+            <p className="mt-1 text-sm leading-6 text-slate-400">{description}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {items.length === 0 ? (
+        <EmptyState title={emptyTitle} description={emptyDescription} />
+      ) : null}
+
       {priorities.map((priority) => {
         const group = items.filter((item) => item.priority === priority);
+        if (group.length === 0) return null;
         return (
           <Card key={priority}>
             <CardHeader className="border-b border-border">
@@ -61,6 +95,21 @@ export function RevisionChecklist({ items }: { items: RevisionItem[] }) {
                       <p className="mt-1 text-slate-300">{item.suggestedAction}</p>
                     </div>
                   </div>
+                  {onStatusChange ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {nextStatusOptions.map((status) => (
+                        <Button
+                          key={status}
+                          type="button"
+                          size="sm"
+                          variant={item.status === status ? "default" : "secondary"}
+                          onClick={() => onStatusChange(item.id, status)}
+                        >
+                          {CHECKLIST_STATUS_LABEL[status]}
+                        </Button>
+                      ))}
+                    </div>
+                  ) : null}
                 </article>
               ))}
             </CardContent>

@@ -20,24 +20,19 @@ import { Logo } from "@/components/layout/logo";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
-const primaryNav = [
+const primaryNavBase = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects/new", label: "Buat Proyek Baru", icon: PlusCircle },
-  { href: "/projects/demo/progress", label: "Progress Analisis", icon: UploadCloud },
 ];
 
-const resultNav = [
-  { href: "/projects/demo/overview", label: "Overview", icon: Gauge },
-  { href: "/projects/demo/checklist", label: "Checklist Revisi", icon: CheckSquare },
-  {
-    href: "/projects/demo/consistency",
-    label: "Konsistensi Slide",
-    icon: SearchCheck,
-  },
-  { href: "/projects/demo/claims", label: "Klaim Bermasalah", icon: ShieldAlert },
-  { href: "/projects/demo/questions", label: "Pertanyaan Penguji", icon: HelpCircle },
-  { href: "/projects/demo/script", label: "Script Presentasi", icon: Presentation },
-  { href: "/projects/demo/export", label: "Export Laporan", icon: FileOutput },
+const resultNavBase = [
+  { path: "overview", label: "Overview", icon: Gauge },
+  { path: "checklist", label: "Checklist Perbaikan", icon: CheckSquare },
+  { path: "consistency", label: "Konsistensi Slide", icon: SearchCheck },
+  { path: "claims", label: "Klaim Bermasalah", icon: ShieldAlert },
+  { path: "questions", label: "Pertanyaan Penguji", icon: HelpCircle },
+  { path: "script", label: "Script Presentasi", icon: Presentation },
+  { path: "export", label: "Export Laporan", icon: FileOutput },
 ];
 
 function SidebarLink({
@@ -67,13 +62,30 @@ function SidebarLink({
 }
 
 export function Sidebar() {
+  const pathname = usePathname();
+  const projectId = pathname.match(/^\/projects\/([^/]+)/)?.[1];
+  const primaryNav = projectId
+    ? [
+        ...primaryNavBase,
+        {
+          href: `/projects/${projectId}/progress`,
+          label: "Progress Analisis",
+          icon: UploadCloud,
+        },
+      ]
+    : primaryNavBase;
+  const resultNav = resultNavBase.map((item) => ({
+    ...item,
+    href: projectId ? `/projects/${projectId}/${item.path}` : "/dashboard",
+  }));
+
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-border bg-slate-950/95 px-4 py-5 lg:flex lg:flex-col">
       <Logo />
       <div className="mt-6 rounded-lg border border-border bg-slate-900/50 p-3">
         <p className="text-xs font-medium uppercase text-slate-500">Beta MVP</p>
         <p className="mt-1 text-sm text-slate-300">
-          Analisis statis dengan mock data. API dan AI asli belum aktif.
+          Frontend sudah terhubung ke backend API. Hasil tetap perlu ditinjau ulang.
         </p>
       </div>
 
@@ -95,7 +107,7 @@ export function Sidebar() {
           </p>
           <div className="space-y-1">
             {resultNav.map((item) => (
-              <SidebarLink key={item.href} {...item} />
+              <SidebarLink key={item.path} {...item} />
             ))}
           </div>
         </div>
@@ -110,17 +122,17 @@ export function Sidebar() {
 
       <div className="mt-5 space-y-3 rounded-lg border border-border bg-card/70 p-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-400">Status mock</span>
-          <StatusBadge tone="emerald">Selesai</StatusBadge>
+          <span className="text-xs text-slate-400">Status integrasi</span>
+          <StatusBadge tone="emerald">API aktif</StatusBadge>
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
           <div className="rounded-md bg-slate-950/50 p-2">
-            <p className="text-slate-500">Skor</p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">78/100</p>
+            <p className="text-slate-500">Auth</p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">JWT</p>
           </div>
           <div className="rounded-md bg-slate-950/50 p-2">
-            <p className="text-slate-500">Isu kritis</p>
-            <p className="mt-1 text-sm font-semibold text-rose-300">5</p>
+            <p className="text-slate-500">Upload</p>
+            <p className="mt-1 text-sm font-semibold text-indigo-200">R2</p>
           </div>
         </div>
       </div>

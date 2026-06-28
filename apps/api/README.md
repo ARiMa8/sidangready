@@ -2,7 +2,7 @@
 
 FastAPI backend for SidangReady AI.
 
-Current scope: Phase 6 complete.
+Current scope: Phase 7 complete.
 
 Implemented:
 
@@ -28,6 +28,8 @@ Implemented:
 - Pydantic validation for structured AI output
 - Deterministic readiness score calculation
 - AI result persistence in `analyses.result_json`
+- Result endpoints for frontend consumption
+- Checklist status update endpoint
 - SQLAlchemy models
 - Alembic migration setup
 - PostgreSQL, Redis, API, and worker Docker Compose services
@@ -122,6 +124,25 @@ GEMINI_MAX_REVISION_CHARS=6000
 
 Never expose Gemini credentials to the frontend.
 
+## Result Flow
+
+```text
+GET /api/projects/{project_id}/results/overview
+GET /api/projects/{project_id}/results/revision-checklist
+PATCH /api/projects/{project_id}/results/revision-checklist/{item_id}
+GET /api/projects/{project_id}/results/checklist
+PATCH /api/projects/{project_id}/results/checklist/{item_id}
+GET /api/projects/{project_id}/results/slide-consistency
+GET /api/projects/{project_id}/results/problematic-claims
+GET /api/projects/{project_id}/results/defense-questions
+GET /api/projects/{project_id}/results/presentation-script
+```
+
+`revision-checklist` contains official revision-note items derived only from
+user-provided revision notes. `checklist` contains AI findings and improvement
+actions from the readiness analysis. These endpoints read the latest persisted
+analysis result. File export generation is intentionally reserved for Phase 8.
+
 ## Analysis Queue Flow
 
 ```text
@@ -132,3 +153,4 @@ POST /api/projects/{project_id}/analyses/{analysis_id}/retry
 ```
 
 Phase 6 queues and runs the real Gemini-backed full readiness analysis task.
+Phase 7 exposes the persisted result to the frontend.

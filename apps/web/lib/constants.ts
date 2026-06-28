@@ -8,7 +8,7 @@ import type {
 } from "@/types";
 
 export const APP_NAME = "SidangReady AI";
-export const APP_SUBTITLE = "Skripsi Defense & Revision Agent";
+export const APP_SUBTITLE = "Skripsi Defense & Revision Assistant";
 export const TAGLINE =
   "Persiapan sidang lebih terstruktur. Revisi lebih cepat. Hasil lebih siap.";
 

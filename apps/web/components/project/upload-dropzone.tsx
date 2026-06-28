@@ -1,9 +1,38 @@
-import { FileUp, Lock, UploadCloud } from "lucide-react";
+import { ChangeEvent } from "react";
+import { CheckCircle2, FileUp, Lock, UploadCloud } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { formatFileSize } from "@/lib/format";
 import type { UploadSpec } from "@/types";
 
-export function UploadDropzone({ spec }: { spec: UploadSpec }) {
+interface UploadDropzoneProps {
+  spec: UploadSpec;
+  file?: File | null;
+  status?: "idle" | "uploading" | "success" | "failed";
+  message?: string;
+  disabled?: boolean;
+  onFileChange?: (file: File | null) => void;
+}
+
+function statusBadge(status: UploadDropzoneProps["status"]) {
+  if (status === "uploading") return <StatusBadge tone="indigo">Mengunggah</StatusBadge>;
+  if (status === "success") return <StatusBadge tone="emerald">Selesai</StatusBadge>;
+  if (status === "failed") return <StatusBadge tone="rose">Gagal</StatusBadge>;
+  return null;
+}
+
+export function UploadDropzone({
+  spec,
+  file,
+  status = "idle",
+  message,
+  disabled = false,
+  onFileChange,
+}: UploadDropzoneProps) {
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    onFileChange?.(event.target.files?.[0] ?? null);
+  }
+
   return (
     <Card className="border-dashed bg-slate-950/35">
       <CardContent className="p-5">
@@ -23,21 +52,35 @@ export function UploadDropzone({ spec }: { spec: UploadSpec }) {
             ) : (
               <StatusBadge tone="slate">Opsional</StatusBadge>
             )}
+            {statusBadge(status)}
           </div>
 
-          <div className="rounded-lg border border-border bg-card/60 p-5 text-center">
+          <label className="block rounded-lg border border-border bg-card/60 p-5 text-center hover:border-indigo-500/40">
+            <input
+              className="sr-only"
+              type="file"
+              disabled={disabled}
+              onChange={handleFileChange}
+            />
             <UploadCloud className="mx-auto h-8 w-8 text-indigo-300" />
             <p className="mt-3 text-sm font-medium text-slate-100">
-              Drag and drop file atau klik untuk memilih
+              {file ? file.name : "Klik untuk memilih file"}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Format {spec.formats}. Maksimal {spec.maxSize}.
+              {file
+                ? `${formatFileSize(file.size)} dipilih`
+                : `Format ${spec.formats}. Maksimal ${spec.maxSize}.`}
             </p>
-          </div>
+          </label>
 
           <div className="flex items-start gap-2 text-xs leading-5 text-slate-500">
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            File belum benar-benar diunggah pada Phase 1. Integrasi R2 akan dibuat di fase berikutnya.
+            {status === "success" ? (
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
+            ) : (
+              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            )}
+            {message ??
+              "File diunggah langsung ke Cloudflare R2 melalui presigned URL dari backend."}
           </div>
         </div>
       </CardContent>

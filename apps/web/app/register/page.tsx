@@ -13,7 +13,7 @@ export default function RegisterPage() {
             Buat ruang kerja revisi yang rapi sebelum sidang.
           </h1>
           <p className="mt-4 text-sm leading-6 text-slate-400">
-            Registrasi ini belum menyimpan data. Phase 1 fokus pada tampilan statis dan struktur frontend.
+            Akun beta digunakan untuk menyimpan proyek, dokumen, dan hasil analisis Anda pada backend SidangReady AI.
           </p>
         </div>
         <Link href="/" className="text-sm text-slate-400 hover:text-slate-100">

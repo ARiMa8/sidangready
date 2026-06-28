@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -30,11 +31,50 @@ class ThesisStructure(BaseModel):
     conclusion: str
     limitations: list[str] = Field(default_factory=list)
 
+    @field_validator(
+        "problem_statements",
+        "objectives",
+        "evaluation_metrics",
+        "results",
+        "limitations",
+        mode="before",
+    )
+    @classmethod
+    def normalize_text_lists(cls, value: object) -> list[str]:
+        return _normalize_text_list(value)
+
+    @field_validator(
+        "title",
+        "methodology",
+        "dataset_or_data",
+        "implementation",
+        "conclusion",
+        mode="before",
+    )
+    @classmethod
+    def normalize_required_text(cls, value: object) -> str:
+        return _required_text(value)
+
 
 class SlideClaim(BaseModel):
     slide_number: int = Field(ge=1)
     slide_title: str
     claims: list[str] = Field(default_factory=list)
+
+    @field_validator("slide_number", mode="before")
+    @classmethod
+    def normalize_slide_number(cls, value: object) -> int:
+        return _parse_positive_int(value, default=1)
+
+    @field_validator("slide_title", mode="before")
+    @classmethod
+    def normalize_slide_title(cls, value: object) -> str:
+        return _required_text(value)
+
+    @field_validator("claims", mode="before")
+    @classmethod
+    def normalize_claims(cls, value: object) -> list[str]:
+        return _normalize_text_list(value)
 
 
 class ExtractionBundle(BaseModel):
@@ -56,6 +96,16 @@ class RevisionItemOutput(BaseModel):
     @classmethod
     def normalize_priority(cls, value: object) -> str:
         return _normalize_priority(value)
+
+    @field_validator("related_slide", mode="before")
+    @classmethod
+    def normalize_related_slide(cls, value: object) -> int | None:
+        return _parse_optional_positive_int(value)
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, value: object) -> str:
+        return _normalize_revision_status(value)
 
     @field_validator(
         "title",
@@ -83,6 +133,11 @@ class SlideConsistencyOutput(BaseModel):
     @classmethod
     def normalize_status(cls, value: object) -> str:
         return _normalize_slide_status(value)
+
+    @field_validator("slide_number", mode="before")
+    @classmethod
+    def normalize_slide_number(cls, value: object) -> int:
+        return _parse_positive_int(value, default=1)
 
     @field_validator(
         "slide_title",
@@ -113,6 +168,11 @@ class ProblematicClaimOutput(BaseModel):
     @classmethod
     def normalize_risk_level(cls, value: object) -> str:
         return _normalize_risk_level(value)
+
+    @field_validator("slide_number", mode="before")
+    @classmethod
+    def normalize_slide_number(cls, value: object) -> int:
+        return _parse_positive_int(value, default=1)
 
     @field_validator("claim_text", "suggested_revision", mode="before")
     @classmethod
@@ -157,9 +217,25 @@ class PresentationScriptOutput(BaseModel):
     def normalize_required_text(cls, value: object) -> str:
         return _required_text(value)
 
+    @field_validator("slide_number", mode="before")
+    @classmethod
+    def normalize_slide_number(cls, value: object) -> int:
+        return _parse_positive_int(value, default=1)
+
+    @field_validator("estimated_duration_seconds", mode="before")
+    @classmethod
+    def normalize_duration(cls, value: object) -> int:
+        return _parse_duration_seconds(value)
+
+    @field_validator("key_points", "delivery_tips", mode="before")
+    @classmethod
+    def normalize_text_lists(cls, value: object) -> list[str]:
+        return _normalize_text_list(value)
+
 
 class GeminiAnalysisOutput(BaseModel):
     overall_summary: str
+    official_revision_items: list[RevisionItemOutput] = Field(default_factory=list)
     revision_items: list[RevisionItemOutput] = Field(default_factory=list)
     slide_checks: list[SlideConsistencyOutput] = Field(default_factory=list)
     problematic_claims: list[ProblematicClaimOutput] = Field(default_factory=list)
@@ -172,6 +248,11 @@ class GeminiAnalysisOutput(BaseModel):
     @classmethod
     def normalize_required_text(cls, value: object) -> str:
         return _required_text(value)
+
+    @field_validator("recommended_next_actions", mode="before")
+    @classmethod
+    def normalize_recommended_next_actions(cls, value: object) -> list[str]:
+        return _normalize_text_list(value)
 
 
 class ReadinessOverview(BaseModel):
@@ -196,6 +277,7 @@ class FullReadinessResult(BaseModel):
     thesis_structure: ThesisStructure
     slide_claims: list[SlideClaim]
     overview: ReadinessOverview
+    official_revision_items: list[RevisionItemOutput] = Field(default_factory=list)
     revision_items: list[RevisionItemOutput]
     slide_checks: list[SlideConsistencyOutput]
     problematic_claims: list[ProblematicClaimOutput]
@@ -212,6 +294,62 @@ def _required_text(value: object) -> str:
     return text or "Tidak ditemukan dukungan eksplisit pada laporan yang diunggah."
 
 
+def _normalize_text_list(value: object) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [_required_text(item) for item in value if _required_text(item)]
+    text = str(value).strip()
+    if not text:
+        return []
+    lines = [
+        re.sub(r"^\s*[-*•\d.)]+\s*", "", line).strip()
+        for line in text.splitlines()
+    ]
+    cleaned = [line for line in lines if line]
+    return cleaned or [text]
+
+
+def _parse_optional_positive_int(value: object) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 1 else None
+    if isinstance(value, float):
+        parsed = int(value)
+        return parsed if parsed >= 1 else None
+    match = re.search(r"\d+", str(value))
+    if not match:
+        return None
+    parsed = int(match.group(0))
+    return parsed if parsed >= 1 else None
+
+
+def _parse_positive_int(value: object, *, default: int) -> int:
+    return _parse_optional_positive_int(value) or default
+
+
+def _parse_duration_seconds(value: object) -> int:
+    if isinstance(value, bool):
+        return 60
+    if isinstance(value, (int, float)):
+        seconds = int(value)
+    else:
+        raw = str(value).strip().lower()
+        match = re.search(r"\d+", raw)
+        if not match:
+            seconds = 60
+        else:
+            number = int(match.group(0))
+            if "menit" in raw or "minute" in raw or "min" in raw:
+                seconds = number * 60
+            else:
+                seconds = number
+    return min(240, max(15, seconds))
+
+
 def _value_to_lower_text(value: object) -> str:
     if value is None:
         return ""
@@ -225,6 +363,17 @@ def _normalize_priority(value: object) -> str:
     if raw in {"minor", "rendah", "low", "kecil"}:
         return "minor"
     return "important"
+
+
+def _normalize_revision_status(value: object) -> str:
+    raw = _value_to_lower_text(value)
+    if raw in {"done", "selesai", "completed", "complete"}:
+        return "done"
+    if raw in {"in progress", "running", "diproses", "dikerjakan"}:
+        return "in_progress"
+    if raw in {"ignored", "ignore", "diabaikan", "skip", "skipped"}:
+        return "ignored"
+    return "todo"
 
 
 def _normalize_slide_status(value: object) -> str:

@@ -53,13 +53,20 @@ def run_full_readiness_analysis(
         response_model=ExtractionBundle,
     )
 
-    _set_progress(db, analysis, "running", 45, "Menganalisis konsistensi dan revisi.")
+    _set_progress(
+        db,
+        analysis,
+        "running",
+        45,
+        "Menjalankan analisis AI terpadu. Tahap ini dapat memakan waktu beberapa menit.",
+    )
     analysis_prompt = build_analysis_prompt(
         project_context=project_context,
         extraction_json=extraction.model_dump_json(),
         thesis_text=context.thesis_text,
         slides_text=context.slides_text,
         revision_notes=context.revision_notes,
+        target_presentation_minutes=project.target_presentation_minutes,
     )
     gemini_analysis = service.generate_structured(
         model_name=settings.gemini_analysis_model,
@@ -67,7 +74,13 @@ def run_full_readiness_analysis(
         response_model=GeminiAnalysisOutput,
     )
 
-    _set_progress(db, analysis, "running", 75, "Menghitung readiness score deterministik.")
+    _set_progress(
+        db,
+        analysis,
+        "running",
+        75,
+        "Memvalidasi hasil dan menghitung readiness score deterministik.",
+    )
     overview = calculate_readiness_overview(gemini_analysis)
     result = FullReadinessResult(
         extraction_model=settings.gemini_cheap_model,
@@ -75,6 +88,7 @@ def run_full_readiness_analysis(
         thesis_structure=extraction.thesis_structure,
         slide_claims=extraction.slide_claims,
         overview=overview,
+        official_revision_items=gemini_analysis.official_revision_items,
         revision_items=gemini_analysis.revision_items,
         slide_checks=gemini_analysis.slide_checks,
         problematic_claims=gemini_analysis.problematic_claims,

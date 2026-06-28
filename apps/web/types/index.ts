@@ -36,6 +36,7 @@ export interface Project {
   readinessScore: number | null;
   lastUpdated: string;
   documentCount: number;
+  documentSummary: string;
   analysisStatus: AnalysisStatus;
   criticalIssueCount: number;
 }

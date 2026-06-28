@@ -45,12 +45,14 @@ class R2StorageService:
         content_type: str,
         expires_in: int,
     ) -> str:
+        # Do not sign Content-Type for browser uploads. Different browsers and
+        # R2 may normalize that header differently, which can produce
+        # SignatureDoesNotMatch even when the URL and credentials are correct.
         return self.client.generate_presigned_url(
             "put_object",
             Params={
                 "Bucket": self.settings.r2_bucket_name,
                 "Key": object_key,
-                "ContentType": content_type,
             },
             ExpiresIn=expires_in,
         )

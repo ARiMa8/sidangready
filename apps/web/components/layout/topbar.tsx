@@ -1,10 +1,16 @@
+"use client";
+
 import Link from "next/link";
-import { Bell, Menu, Plus, Search } from "lucide-react";
+import { Bell, LogOut, Menu, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/layout/logo";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Topbar() {
+  const { user, logout } = useAuth();
+  const initial = user?.name?.charAt(0).toUpperCase() ?? "S";
+
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
@@ -32,13 +38,18 @@ export function Topbar() {
           </Button>
           <div className="hidden min-w-0 items-center gap-3 rounded-md border border-border bg-card/70 px-3 py-2 sm:flex">
             <div className="h-7 w-7 rounded-md bg-indigo-500/20 text-center text-sm font-semibold leading-7 text-indigo-200">
-              A
+              {initial}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-slate-100">Andi Mahesa</p>
+              <p className="truncate text-xs font-medium text-slate-100">
+                {user?.name ?? "SidangReady"}
+              </p>
               <p className="truncate text-[11px] text-slate-500">Mahasiswa</p>
             </div>
           </div>
+          <Button variant="ghost" size="icon" aria-label="Keluar" onClick={logout}>
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </header>

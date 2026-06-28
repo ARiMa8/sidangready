@@ -1,6 +1,6 @@
 # SidangReady AI
 
-SidangReady AI is an AI-powered thesis defense and revision workflow assistant for Indonesian final-year students.
+SidangReady AI is an LLM-powered thesis defense readiness and revision workflow assistant for Indonesian final-year students.
 
 The product helps students review thesis documents they already own, prepare for thesis defense, organize post-defense revisions, and compare defense slides against the written report.
 
@@ -22,27 +22,37 @@ Upload thesis report + upload defense slides + add revision notes
 Current implementation status:
 
 ```text
-Phase 6: Gemini analysis pipeline complete
+Phase 7: Frontend API integration complete
 ```
 
-The repository now contains a static frontend UI, FastAPI backend, Cloudflare R2 document upload flow, document parsing, Redis-backed worker queue, and Gemini-powered structured analysis. Frontend API integration and real report export are planned for later phases.
+The repository now contains a real frontend-to-backend MVP flow: authentication, project dashboard, Cloudflare R2 document upload, document parsing, Redis-backed worker queue, Gemini-powered structured analysis, progress polling, and result pages. This is an LLM-powered document analysis SaaS foundation, not a full Agentic AI system. Real report file generation is planned for Phase 8.
+
+## Product Positioning
+
+SidangReady AI is currently an LLM-powered academic readiness platform and AI-powered thesis defense revision workflow assistant. It follows a bounded workflow around uploaded documents and generates structured outputs for student review.
+
+The current MVP should not be described as full Agentic AI, an autonomous academic agent, an automated thesis writer, or a replacement for supervisors. Future versions may evolve toward a semi-agentic thesis revision workflow with project memory, planning, critique, re-analysis, and human approval.
 
 ## Features
 
-Implemented in the current static UI:
+Implemented in the current frontend:
 
 - Landing page with product positioning and ethical disclaimer
-- Login and register pages as UI placeholders
-- Project dashboard with mock project cards
-- Create project and document upload interface
-- Analysis progress page with stepper states
+- Login and register pages connected to backend auth
+- Project dashboard connected to real backend projects
+- Create project and document upload flow
+- Direct-to-R2 upload through backend presigned URLs
+- Document extraction trigger after upload
+- Analysis queue trigger
+- Analysis progress page with backend polling
 - Readiness overview with score summary
 - Revision checklist grouped by priority
+- Checklist status update controls
 - Slide consistency table
 - Problematic claim cards
 - Examiner question cards
 - Presentation script panel
-- Export report page with Markdown as the MVP priority
+- Export report page connected to real analysis summary
 
 Implemented in the current backend foundation:
 
@@ -68,10 +78,11 @@ Implemented in the current backend foundation:
 - Gemini structured analysis pipeline
 - Deterministic readiness score calculation
 - AI result persistence in `analyses.result_json`
+- Result routes for overview, checklist, slide consistency, problematic claims, defense questions, and presentation script
+- Checklist item status update route
 
 Planned for the full MVP:
 
-- Frontend integration with real backend data
 - Markdown report export
 - File retention and beta quota controls
 
@@ -106,7 +117,7 @@ Current frontend:
 - shadcn/ui-compatible component structure
 - Lucide React icons
 - Inter font
-- Static mock data
+- Typed API client connected to the FastAPI backend
 
 Current backend:
 
@@ -122,7 +133,6 @@ Current backend:
 
 Planned integrations:
 
-- Frontend API integration
 - Markdown export generation
 
 ## Repository Structure
@@ -153,7 +163,7 @@ sidangready/
   README.md
 ```
 
-`apps/api` contains the FastAPI backend, storage integration, document parsing, queue worker, and Gemini analysis orchestration. `apps/web` is still static/mock-data UI until Phase 7 frontend API integration.
+`apps/api` contains the FastAPI backend, storage integration, document parsing, queue worker, Gemini analysis orchestration, and result routes. `apps/web` contains the Next.js frontend connected to the backend API.
 
 ## Getting Started
 
@@ -338,6 +348,26 @@ The backend enforces:
 
 Real R2 credentials must only be stored in local `.env` files or deployment secrets.
 
+### Cloudflare R2 CORS
+
+Browser direct uploads require CORS to be enabled on the R2 bucket. For local
+development, allow the frontend origin:
+
+```json
+[
+  {
+    "AllowedOrigins": ["http://localhost:3000"],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+Add the production frontend domain, such as the Vercel domain, before testing
+uploads from production. Do not add R2 credentials to frontend code.
+
 ## Analysis API Flow
 
 Phase 6 adds the Gemini-backed worker analysis flow:
@@ -352,6 +382,27 @@ POST /api/projects/{project_id}/analyses/{analysis_id}/retry
 The worker uses extracted document text, validates Gemini JSON with Pydantic
 schemas, calculates readiness score deterministically in backend code, and
 stores the structured result in `analyses.result_json`.
+
+## Result API Flow
+
+Phase 7 exposes persisted analysis results for the frontend:
+
+```text
+GET /api/projects/{project_id}/results/overview
+GET /api/projects/{project_id}/results/revision-checklist
+PATCH /api/projects/{project_id}/results/revision-checklist/{item_id}
+GET /api/projects/{project_id}/results/checklist
+PATCH /api/projects/{project_id}/results/checklist/{item_id}
+GET /api/projects/{project_id}/results/slide-consistency
+GET /api/projects/{project_id}/results/problematic-claims
+GET /api/projects/{project_id}/results/defense-questions
+GET /api/projects/{project_id}/results/presentation-script
+```
+
+`revision-checklist` is reserved for official user-provided thesis revision notes.
+`checklist` contains AI findings and improvement actions from the readiness analysis.
+The export page currently reads the latest analysis summary. Actual Markdown file
+generation and download endpoints are planned for Phase 8.
 
 ## Deployment Target
 
@@ -372,7 +423,7 @@ The frontend should use:
 NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
 ```
 
-The backend, worker, database, storage, and AI analysis pipeline are implemented locally. Frontend API integration and production reverse proxy configuration are still planned.
+The backend, worker, database, storage, AI analysis pipeline, and frontend API integration are implemented locally. Production reverse proxy configuration is still planned.
 
 ## Roadmap
 
@@ -383,9 +434,49 @@ Phase 3: Cloudflare R2 storage integration - complete
 Phase 4: Document parsing for PDF, DOCX, PPTX, and TXT - complete  
 Phase 5: Queue and worker for asynchronous analysis - complete  
 Phase 6: Gemini-powered structured analysis - complete  
-Phase 7: Frontend API integration - next  
-Phase 8: Markdown report export  
+Phase 7: Frontend API integration - complete  
+Phase 8: Markdown report export - next  
 Phase 9: Beta safety, quotas, cleanup jobs, and deployment documentation
+
+## Agentic Terminology
+
+- LLM-powered workflow: fixed flow that uses an LLM to analyze and generate structured outputs.
+- Semi-agentic workflow: system has planner, memory/state, critique, and human approval, but still operates within a mostly bounded workflow.
+- Bounded agentic workflow: system can observe state, plan, choose tools, act, evaluate, re-plan, and stop when a defined goal is reached, while remaining limited to the thesis defense/revision domain.
+
+## Strategic Roadmap After Phase 8
+
+### Phase 8 - Export Report Generation
+
+- Generate Markdown final readiness report.
+- Store export in R2.
+- Add export metadata and download flow.
+- This phase is not agentic yet.
+
+### Phase 9 - Project Memory and Revision State
+
+- Persist project goals such as target readiness score, deadline, defense date, and revision priority.
+- Persist revision history and issue status over time.
+- Track which critical issues are open, resolved, ignored, or need user review.
+- Track document versions when users upload revised files.
+- This phase introduces memory/state but is still not full agentic.
+
+### Phase 10 - Semi-Agentic Revision Planner
+
+- Add a planner service that creates a revision plan from latest analysis, target readiness, deadline, and unresolved issues.
+- The planner should recommend next actions but not execute sensitive actions without user approval.
+- Add a critic/review step that checks if generated plans are too vague, unsupported, or inconsistent with analysis evidence.
+- Add explicit human approval before marking project as ready or exporting final report.
+- This can be described as a semi-agentic workflow.
+
+### Phase 11 - Bounded Agentic Workflow, Future Optional
+
+- Add an observe-plan-act-evaluate loop.
+- Allow the system to choose analysis tools dynamically depending on project state.
+- Allow re-analysis after revised document upload.
+- Allow the system to re-plan based on unresolved issues.
+- Add clear stop conditions such as readiness target reached, no critical issues remaining, user approval, token budget limit, or deadline reached.
+- Even then, describe it as a bounded domain-specific agentic workflow, not a general autonomous AI.
 
 ## Security and Privacy Notes
 
@@ -406,4 +497,4 @@ No license has been selected yet. All rights are reserved unless a license is ad
 
 ## Status
 
-SidangReady AI is currently in MVP development. The backend can accept projects, upload metadata, parse supported documents, queue analysis jobs, and run Gemini-backed structured analysis. The frontend is still using mock data until Phase 7 connects it to the backend.
+SidangReady AI is currently in MVP development. The frontend can authenticate users, create projects, upload documents, trigger extraction, queue analysis, poll progress, and render persisted backend results. Markdown export generation is the next major feature.

@@ -26,6 +26,7 @@ export const mockProjects: Project[] = [
     readinessScore: 78,
     lastUpdated: "2026-06-14T10:21:00.000Z",
     documentCount: 3,
+    documentSummary: "laporan, slide, catatan revisi",
     analysisStatus: "complete",
     criticalIssueCount: 5,
   },
@@ -42,6 +43,7 @@ export const mockProjects: Project[] = [
     readinessScore: 64,
     lastUpdated: "2026-06-12T08:40:00.000Z",
     documentCount: 3,
+    documentSummary: "laporan, slide, catatan revisi",
     analysisStatus: "running",
     criticalIssueCount: 2,
   },
@@ -58,6 +60,7 @@ export const mockProjects: Project[] = [
     readinessScore: null,
     lastUpdated: "2026-06-08T09:13:00.000Z",
     documentCount: 1,
+    documentSummary: "laporan",
     analysisStatus: "queued",
     criticalIssueCount: 0,
   },
@@ -82,8 +85,8 @@ export const uploadSpecs: UploadSpec[] = [
   },
   {
     id: "revision",
-    title: "Catatan Revisi",
-    description: "Upload file atau paste catatan",
+    title: "Catatan Revisi Resmi",
+    description: "Opsional, dari dosen/penguji",
     formats: "TXT, DOCX",
     maxSize: "10MB",
     required: false,
@@ -111,26 +114,26 @@ export const analysisSteps: AnalysisStep[] = [
   },
   {
     id: "mapping",
-    title: "Pemetaan slide ke laporan",
-    description: "Mencari bagian laporan yang mendukung isi slide.",
+    title: "Menyiapkan konteks analisis",
+    description: "Meringkas laporan, slide, dan catatan revisi untuk model AI.",
     status: "running",
   },
   {
     id: "consistency",
-    title: "Cek konsistensi",
-    description: "Menandai klaim yang didukung, sebagian, atau belum didukung.",
+    title: "Analisis AI terpadu",
+    description: "Menganalisis konsistensi, klaim, checklist, pertanyaan, dan script dalam satu proses.",
     status: "pending",
   },
   {
     id: "claims",
-    title: "Deteksi klaim bermasalah",
-    description: "Mengumpulkan klaim yang berisiko saat sidang.",
+    title: "Validasi hasil analisis",
+    description: "Memastikan output terstruktur dan sesuai schema backend.",
     status: "pending",
   },
   {
     id: "checklist",
-    title: "Generate checklist revisi",
-    description: "Membuat daftar tindakan revisi yang terstruktur.",
+    title: "Menyusun checklist perbaikan",
+    description: "Memisahkan revisi skripsi dan temuan perbaikan.",
     status: "pending",
   },
   {
@@ -142,7 +145,7 @@ export const analysisSteps: AnalysisStep[] = [
   {
     id: "script",
     title: "Generate script presentasi",
-    description: "Membuat naskah presentasi standar 10 menit.",
+    description: "Membuat naskah presentasi sesuai target durasi proyek.",
     status: "pending",
   },
   {
@@ -158,7 +161,7 @@ export const overviewMetrics: OverviewMetric[] = [
   { label: "Isu Penting", value: "8", tone: "warning" },
   { label: "Isu Minor", value: "5", tone: "success" },
   { label: "Slide Dicek", value: "34", tone: "primary" },
-  { label: "Checklist Revisi", value: "18", tone: "default" },
+  { label: "Checklist Perbaikan", value: "18", tone: "default" },
   { label: "Pertanyaan Penguji", value: "28", tone: "success" },
 ];
 

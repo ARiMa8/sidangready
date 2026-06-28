@@ -35,21 +35,26 @@ class GeminiService:
         self._validate_settings()
         prompt_with_schema = _append_json_instruction(prompt)
         last_error: Exception | None = None
+        last_text: str | None = None
 
         for attempt in range(2):
             candidate_prompt = prompt_with_schema
             if attempt == 1:
+                repair_context = _build_repair_context(last_text, last_error)
                 candidate_prompt = (
                     f"{prompt_with_schema}\n\n"
-                    "Perbaiki output sebelumnya: kembalikan JSON valid saja, "
-                    "tanpa markdown dan tanpa teks tambahan."
+                    "Output sebelumnya gagal diproses. Perbaiki dengan ketentuan berikut:\n"
+                    f"{repair_context}\n"
+                    "Kembalikan JSON valid saja, tanpa markdown, tanpa komentar, "
+                    "dan tanpa teks tambahan."
                 )
 
             for payload in self._payload_variants(candidate_prompt):
                 try:
                     response_json = self._post_generate_content(model_name, payload)
                     text = self._extract_text(response_json)
-                    data = json.loads(_strip_json_fences(text))
+                    last_text = text
+                    data = _load_json_object(text)
                     return response_model.model_validate(data)
                 except httpx.HTTPStatusError as exc:
                     last_error = exc
@@ -158,6 +163,62 @@ def _strip_json_fences(text: str) -> str:
     if fence_match:
         return fence_match.group(1).strip()
     return stripped
+
+
+def _load_json_object(text: str) -> object:
+    stripped = _strip_json_fences(text)
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        candidate = _extract_first_json_object(stripped)
+        if candidate is None:
+            raise
+        return json.loads(candidate)
+
+
+def _extract_first_json_object(text: str) -> str | None:
+    start = text.find("{")
+    if start == -1:
+        return None
+
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+
+    return None
+
+
+def _build_repair_context(last_text: str | None, last_error: Exception | None) -> str:
+    parts = []
+    if last_error is not None:
+        error_text = str(last_error).strip()
+        if error_text:
+            parts.append(f"Error validasi/parsing: {error_text[:1200]}")
+    if last_text:
+        excerpt = last_text.strip()[:2500]
+        parts.append(f"Output sebelumnya yang perlu diperbaiki:\n{excerpt}")
+    if not parts:
+        return "JSON sebelumnya tidak valid atau tidak sesuai schema."
+    return "\n\n".join(parts)
 
 
 def _http_error_message(status_code: int) -> str:

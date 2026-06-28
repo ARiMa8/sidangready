@@ -1,17 +1,23 @@
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { FileSearch } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface EmptyStateProps {
   title: string;
   description: string;
   icon?: LucideIcon;
+  actionLabel?: string;
+  actionHref?: string;
 }
 
 export function EmptyState({
   title,
   description,
   icon: Icon = FileSearch,
+  actionLabel,
+  actionHref,
 }: EmptyStateProps) {
   return (
     <Card className="border-dashed">
@@ -23,6 +29,11 @@ export function EmptyState({
           <h3 className="text-base font-semibold">{title}</h3>
           <p className="mt-1 max-w-md text-sm text-slate-400">{description}</p>
         </div>
+        {actionLabel && actionHref ? (
+          <Button asChild size="sm">
+            <Link href={actionHref}>{actionLabel}</Link>
+          </Button>
+        ) : null}
       </CardContent>
     </Card>
   );

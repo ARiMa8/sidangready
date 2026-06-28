@@ -97,7 +97,7 @@ def presign_document_upload(
         object_key=object_key,
         upload_url=upload_url,
         expires_in=settings.presigned_upload_expires_seconds,
-        headers={"Content-Type": payload.file_mime_type},
+        headers={},
     )
 
 

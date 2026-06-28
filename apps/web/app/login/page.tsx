@@ -13,7 +13,7 @@ export default function LoginPage() {
             Lanjutkan persiapan sidang dengan alur yang lebih terstruktur.
           </h1>
           <p className="mt-4 text-sm leading-6 text-slate-400">
-            Login masih berupa tampilan statis pada Phase 1. Integrasi JWT dan backend akan dibuat setelah fondasi UI selesai.
+            Masuk dengan akun beta untuk mengelola proyek, mengunggah dokumen, dan memantau proses analisis.
           </p>
         </div>
         <Link href="/" className="text-sm text-slate-400 hover:text-slate-100">

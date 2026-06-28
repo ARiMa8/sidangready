@@ -119,7 +119,7 @@ class DocumentUploadFlowTestCase(unittest.TestCase):
         self.assertEqual(presign_response.status_code, 200)
         presign_data = presign_response.json()
         self.assertTrue(presign_data["object_key"].endswith("-laporan-skripsi.pdf"))
-        self.assertEqual(presign_data["headers"]["Content-Type"], "application/pdf")
+        self.assertEqual(presign_data["headers"], {})
 
         confirm_response = self.client.post(
             f"/api/projects/{project_id}/documents/confirm",

@@ -23,6 +23,18 @@ EXTRACTION_JSON_SHAPE = """
 ANALYSIS_JSON_SHAPE = """
 {
   "overall_summary": "...",
+  "official_revision_items": [
+    {
+      "title": "...",
+      "description": "...",
+      "priority": "critical|important|minor",
+      "related_chapter": "BAB ... atau null",
+      "related_slide": 1,
+      "reason": "Diambil dari catatan revisi yang diberikan user.",
+      "suggested_action": "...",
+      "status": "todo"
+    }
+  ],
   "revision_items": [
     {
       "title": "...",
@@ -131,6 +143,7 @@ def build_analysis_prompt(
     thesis_text: str,
     slides_text: str,
     revision_notes: str,
+    target_presentation_minutes: int,
 ) -> str:
     return f"""
 {BASE_ETHICAL_RULES}
@@ -138,19 +151,21 @@ def build_analysis_prompt(
 Tugas:
 Lakukan analisis kesiapan sidang berdasarkan struktur dan klaim yang sudah diekstrak.
 Buat:
-1. checklist revisi,
-2. konsistensi slide vs laporan,
-3. klaim bermasalah,
-4. pertanyaan penguji,
-5. script presentasi standar 10 menit,
-6. rekomendasi langkah berikutnya.
+1. checklist revisi skripsi dari catatan revisi user bila tersedia,
+2. checklist temuan dan perbaikan dari analisis AI,
+3. konsistensi slide vs laporan,
+4. klaim bermasalah,
+5. pertanyaan penguji,
+6. script presentasi standar {target_presentation_minutes} menit,
+7. rekomendasi langkah berikutnya.
 
 Batas output:
-- revision_items: 5 sampai 10 item paling penting.
+- official_revision_items: hanya dari catatan revisi user. Jika tidak ada catatan revisi eksplisit, isi array kosong.
+- revision_items: 5 sampai 10 temuan/perbaikan paling penting dari analisis laporan dan slide.
 - slide_checks: cek slide yang memiliki klaim, maksimal 30 slide.
 - problematic_claims: maksimal 8 klaim paling berisiko.
 - defense_questions: 8 sampai 12 pertanyaan.
-- presentation_scripts: satu script ringkas per slide, maksimal 20 slide.
+- presentation_scripts: satu script per slide dengan total estimasi durasi mendekati {target_presentation_minutes} menit, maksimal 20 slide.
 
 Aturan bukti:
 - Gunakan hanya informasi dari laporan, slide, dan catatan revisi.
@@ -159,6 +174,8 @@ Aturan bukti:
 - Untuk evidence_excerpt, isi kutipan pendek atau null jika tidak ada bukti eksplisit.
 - Jangan membuat jawaban final yang seolah pasti benar; berikan panduan jawaban.
 - Status checklist default harus "todo".
+- Jangan mencampur catatan revisi resmi user ke revision_items. Masukkan catatan revisi resmi user ke official_revision_items.
+- Jangan memasukkan temuan AI ke official_revision_items.
 
 Project:
 {project_context}
